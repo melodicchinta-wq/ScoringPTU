@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup Latihan Panahan - SCORINGPTU</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* ================= RESET & BASE ================= */
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; }
+    body { background-color: #f3f5f9; color: #1e293b; min-height: 100vh; display: flex; flex-direction: column; }
+    
+    /* ================= NAVBAR ================= */
+    .desktop-navbar { background-color: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 14px 8%; position: sticky; top: 0; z-index: 90; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02); }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.2rem; color: #0f172a; }
+    .brand-icon { background-color: #18191c; color: #ffffff; padding: 6px 10px; border-radius: 12px; font-size: 1rem; }
+    .nav-links-desktop { display: flex; gap: 12px; align-items: center; }
+    .nav-links-desktop a { color: #64748b; text-decoration: none; font-size: 0.9rem; font-weight: 600; padding: 8px 16px; border-radius: 12px; transition: all 0.2s ease; display: flex; align-items: center; gap: 8px; }
+    .nav-links-desktop a:hover, .nav-links-desktop a.active { background-color: #18191c; color: #ffffff; }
+    .user-profile-header { display: flex; align-items: center; gap: 10px; background: #f8fafc; padding: 6px 14px; border-radius: 30px; border: 1px solid #e2e8f0; }
+    .user-avatar { width: 30px; height: 30px; background: #e0e7ff; color: #4f46e5; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; }
+    .role-selector-wrapper { position: relative; display: inline-block; }
+    .role-select { background-color: #18191c; color: #ffffff; border: 1px solid #e2e8f0; padding: 8px 14px; border-radius: 12px; font-size: 0.85rem; font-weight: 700; cursor: pointer; outline: none; transition: all 0.2s ease; }
+    .role-select:hover { background-color: #0f172a; }
+
+    /* ================= MOBILE SIDEBAR ================= */
+    .btn-hamburger-mobile { display: none; background: none; border: none; font-size: 1.4rem; color: #0f172a; cursor: pointer; }
+    .mobile-sidebar-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px); z-index: 200; display: none; }
+    .mobile-sidebar-overlay.active { display: block; }
+    .mobile-sidebar { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background-color: #18191c; color: #ffffff; z-index: 210; transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; justify-content: space-between; padding: 24px 20px; box-shadow: 10px 0 30px rgba(0,0,0,0.2); }
+    .mobile-sidebar.active { left: 0; }
+    .mobile-nav-menu { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
+    .mobile-nav-menu a { color: #94a3b8; text-decoration: none; padding: 12px 16px; border-radius: 12px; font-weight: 600; display: flex; align-items: center; gap: 12px; }
+    .mobile-nav-menu a.active, .mobile-nav-menu a:hover { background-color: rgba(255, 255, 255, 0.15); color: #ffffff; }
+
+    /* ================= MAIN CONTENT ================= */
+    main { max-width: 900px; width: 100%; margin: 0 auto; padding: 24px 20px 60px 20px; flex: 1; }
+    .page-navigation { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+    .btn-back { width: 40px; height: 40px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; color: #0f172a; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.9rem; box-shadow: 0 2px 6px rgba(0,0,0,0.02); transition: all 0.2s; }
+    .btn-back:hover { background: #f8fafc; transform: translateX(-2px); }
+
+    /* Mode Toggle (Solo/Group) */
+    .mode-toggle-card { background: #ffffff; padding: 6px; border-radius: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
+    .btn-mode { padding: 12px; border-radius: 12px; border: none; font-weight: 700; font-size: 0.88rem; cursor: pointer; background: transparent; color: #64748b; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; }
+    .btn-mode.active { background-color: #18191c; color: #ffffff; box-shadow: 0 4px 12px rgba(24, 25, 28, 0.15); }
+
+    /* Cards */
+    .dashboard-card { background: #ffffff; border-radius: 20px; padding: 24px; margin-bottom: 20px; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02); }
+    .card-header-title { font-size: 1.05rem; font-weight: 800; color: #0f172a; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9; }
+    
+    /* Grid Forms */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 650px) { .grid-2 { grid-template-columns: 1fr; } }
+    
+    .form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+    .form-group label { font-size: 0.85rem; font-weight: 700; color: #475569; }
+    .form-control { background-color: #f8fafc; border: 1px solid #e2e8f0; color: #0f172a; padding: 12px 16px; border-radius: 12px; font-size: 0.9rem; outline: none; font-weight: 600; width: 100%; transition: all 0.2s; }
+    .form-control:focus { border-color: #6366f1; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+
+    /* Tombol-tombol Opsi (Jarak) */
+    .grid-buttons { display: grid; grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); gap: 10px; }
+    .btn-option { background-color: #f8fafc; border: 1px solid #e2e8f0; color: #475569; padding: 12px 8px; border-radius: 14px; font-weight: 700; font-size: 0.85rem; cursor: pointer; text-align: center; transition: all 0.2s; }
+    .btn-option:hover { background-color: #f1f5f9; }
+    .btn-option.active { background-color: #e0e7ff; color: #3730a3; border-color: #c7d2fe; box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15); }
+
+    .btn-link { background: none; border: none; color: #4f46e5; font-size: 0.8rem; font-weight: 700; cursor: pointer; text-decoration: none; transition: color 0.2s; }
+    .btn-link:hover { color: #3730a3; }
+
+    /* Peserta */
+    .participant-row { background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 16px; margin-bottom: 12px; display: grid; grid-template-columns: 2fr 2fr 1fr 1fr auto; gap: 12px; align-items: center; }
+    @media (max-width: 850px) { .participant-row { grid-template-columns: 1fr 1fr; gap: 10px; } }
+    @media (max-width: 500px) { .participant-row { grid-template-columns: 1fr; } }
+    
+    .btn-danger { background-color: #fee2e2; border: 1px solid #fecaca; color: #ef4444; padding: 12px; border-radius: 12px; cursor: pointer; font-weight: 700; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .btn-danger:hover { background-color: #fecaca; }
+
+    /* Tombol Utama */
+    .btn-submit { width: 100%; background-color: #18191c; color: #ffffff; font-weight: 800; font-size: 1rem; padding: 18px; border-radius: 16px; border: none; cursor: pointer; box-shadow: 0 6px 20px rgba(24, 25, 28, 0.15); display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.2s; }
+    .btn-submit:hover { background-color: #0f172a; transform: translateY(-2px); }
+
+    /* Modal CRUD */
+    .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 1000; }
+    .modal.active { display: flex; }
+    .modal-content { background: #ffffff; border-radius: 24px; width: 100%; max-width: 420px; padding: 24px; border: 1px solid #e2e8f0; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+    .modal-item-list { max-height: 180px; overflow-y: auto; margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; }
+    .modal-item { background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px 14px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; font-weight: 600; }
+
+    /* Footer */
+    .desktop-footer { display: block; background: #222; color: white; text-align: center; padding: 20px; margin-top: 50px; }
+    .mobile-footer-text { display: none; }
+    
+    /* ================= RESPONSIVE BREAKPOINTS ================= */
+    @media (max-width: 900px) {
+      .nav-links-desktop { display: none; }
+      .btn-hamburger-mobile { display: block; }
+      .desktop-navbar { padding: 12px 20px; }
+      main { padding: 16px 12px; }
+      .dashboard-card { padding: 16px; border-radius: 16px; }
+      .desktop-footer { display: none; }
+      .mobile-footer-text { display: block; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR DESKTOP -->
+  <header class="desktop-navbar">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <button class="btn-hamburger-mobile" onclick="toggleMobileSidebar()">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div class="brand">
+        <div class="brand-icon">🎯</div>
+        <span>SCORING<span style="color:#6366f1;">PTU</span></span>
+      </div>
+    </div>
+
+    <nav class="nav-links-desktop">
+      <a href="home.html" class="active"><i class="fa-solid fa-sliders"></i> Setup Latihan</a>
+      <a href="scoring.html"><i class="fa-solid fa-bullseye"></i> Papan Skor</a>
+      <a href="riwayat.html"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat Sesi</a>
+      <a href="pendaftaran.html"><i class="fa-solid fa-users"></i> Registrasi Peserta</a>
+      <a href="index.html" id="nav-public-score-desktop" style="display: none;"><i class="fa-solid fa-table"></i> Public Score</a>
+      <div class="role-selector-wrapper">
+        <select id="app-role-picker-desktop" class="role-select" onchange="switchRole(this.value)">
+          <option value="scorer">📱 Scorer (HP)</option>
+          <option value="display">🖥️ Live Display</option>
+          <option value="admin" selected>⚙️ Admin / Panitia</option>
+        </select>
+      </div>
+    </nav>
+
+    <div class="user-profile-header">
+      <div class="user-avatar" id="user-avatar-box">A</div>
+      <div style="display: flex; flex-direction: column; line-height: 1.2;">
+        <span style="font-size: 0.85rem; font-weight: 700; color: #0f172a;" id="user-name-text">Archer Pro</span>
+        <span style="font-size: 0.7rem; color: #64748b; font-weight: 600;" id="user-club-text">Klub Panahan</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- SIDEBAR MOBILE -->
+  <div class="mobile-sidebar-overlay" id="mobile-overlay" onclick="toggleMobileSidebar()"></div>
+  <aside class="mobile-sidebar" id="mobile-sidebar">
+    <div>
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div class="brand" style="color:#fff;">
+          <div class="brand-icon" style="background:#fff; color:#18191c;">🎯</div>
+          <span>SCORING<span style="color:#818cf8;">PTU</span></span>
+        </div>
+        <button onclick="toggleMobileSidebar()" style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <nav class="mobile-nav-menu">
+        <a href="home.html" class="active"><i class="fa-solid fa-sliders"></i> Setup Latihan</a>
+        <a href="scoring.html"><i class="fa-solid fa-bullseye"></i> Papan Skor</a>
+        <a href="riwayat.html"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat Sesi</a>
+        <a href="pendaftaran.html"><i class="fa-solid fa-users"></i> Registrasi Peserta</a>
+        <a href="index.html" id="nav-public-score-mobile" style="display: none;"><i class="fa-solid fa-table"></i> Public Score</a>
+        <div class="role-selector-wrapper" style="margin-top: 10px;">
+          <select id="app-role-picker-mobile" class="role-select" style="width: 100%;" onchange="switchRole(this.value)">
+            <option value="scorer">📱 Scorer (HP)</option>
+            <option value="display">🖥️ Live Display</option>
+            <option value="admin" selected>⚙️ Admin / Panitia</option>
+          </select>
+        </div>
+      </nav>
+    </div>
+    <div class="mobile-footer-text" style="font-size: 0.75rem; color: #94a3b8; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px;">
+      <p>Copyright &copy; 2026 &bull; Mela Aulia Syarifah</p>
+    </div>
+  </aside>
+
+  <main>
+    <div class="page-navigation">
+      <button class="btn-back" onclick="window.history.back()"><i class="fa-solid fa-chevron-left"></i></button>
+      <div>
+        <span style="font-size: 0.75rem; font-weight: 800; color: #6366f1; text-transform: uppercase;">Pengaturan Sesi</span>
+        <h1 style="font-size: 1.4rem; font-weight: 800; color: #0f172a;">Atur Latihan & Event</h1>
+      </div>
+    </div>
+
+    <!-- Toggle Solo / Bareng -->
+    <div class="mode-toggle-card">
+      <button type="button" class="btn-mode" id="btn-solo" onclick="setMode('solo')">
+        <i class="fa-solid fa-user"></i> Solo
+      </button>
+      <button type="button" class="btn-mode active" id="btn-group" onclick="setMode('group')">
+        <i class="fa-solid fa-users"></i> Bareng-Bareng
+      </button>
+    </div>
+
+    <form onsubmit="event.preventDefault();">
+      <!-- KARTU 1: INFO ACARA -->
+      <div class="dashboard-card" id="event-info-card">
+        <div class="card-header-title">
+          <span>🚩 Informasi Acara</span>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Nama Acara / Sesi Latihan</label>
+            <input type="text" id="event-name" class="form-control" value="Internal Match">
+          </div>
+          <div class="form-group">
+            <label>Lokasi / Lapangan</label>
+            <input type="text" id="event-location" class="form-control" value="Lapangan Panahan">
+          </div>
+        </div>
+      </div>
+
+      <!-- KARTU 2: ATURAN MAIN -->
+      <div class="dashboard-card">
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <label>Jenis Busur / Kategori</label>
+            <button type="button" class="btn-link" onclick="openModal('busur')">+ Kelola</button>
+          </div>
+          <select class="form-control" id="select-busur"></select>
+        </div>
+
+        <div class="form-group" style="margin-top: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <label>Jarak Tembak</label>
+            <button type="button" class="btn-link" onclick="openModal('jarak')">+ Tambah</button>
+          </div>
+          <div class="grid-buttons" id="grid-jarak"></div>
+        </div>
+
+        <div class="grid-2" style="margin-top: 16px;">
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <label>Arrow per Rambahan</label>
+              <button type="button" class="btn-link" onclick="openModal('arrow')">+ Custom</button>
+            </div>
+            <select class="form-control" id="select-arrow"></select>
+          </div>
+
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <label>Jumlah Rambahan (End)</label>
+              <button type="button" class="btn-link" onclick="openModal('rambahan')">+ Custom</button>
+            </div>
+            <select class="form-control" id="select-rambahan"></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- KARTU 3: PESERTA -->
+      <div class="dashboard-card" id="participants-card">
+        <div class="card-header-title" style="flex-wrap: wrap; gap: 10px;">
+          <span>👥 Daftar Peserta Panahan</span>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <select id="db-category-picker" class="form-control" style="font-size:0.8rem; padding:8px 12px; border-color:#6366f1; color:#4f46e5; background:#e0e7ff; width: auto;" onchange="loadParticipantsFromDBCategory(this.value)">
+              <option value="">🔍 Ambil dari DB...</option>
+              <option value="ALL">✨ Semua Peserta</option>
+              <option value="Traditional Bow">Traditional Bow</option>
+              <option value="Kasumedangan">Kasumedangan</option>
+              <option value="Recurve Bow">Recurve Bow</option>
+            </select>
+            <button type="button" class="btn-link" onclick="addParticipantRow()" style="background: #18191c; color:#ffffff; padding:8px 14px; border-radius:10px; text-decoration:none; white-space: nowrap;">+ Manual</button>
+            <button type="button" class="btn-link" onclick="clearAllParticipants()" style="background: #fee2e2; color:#dc2626; padding:8px 12px; border-radius:10px; text-decoration:none; white-space: nowrap;"><i class="fa-solid fa-trash"></i> Kosongkan</button>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
+          <button type="button" class="btn-link" onclick="openModal('bantalan')" style="font-size: 0.8rem; background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 8px;"><i class="fa-solid fa-bullseye"></i> + Opsi Bantalan</button>
+          <button type="button" class="btn-link" onclick="openModal('sesi')" style="font-size: 0.8rem; background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 8px;"><i class="fa-solid fa-layer-group"></i> + Opsi Sesi</button>
+        </div>
+        
+        <div id="participant-list"></div>
+      </div>
+
+      <button type="button" class="btn-submit" onclick="goToScoring()">
+        <span>Mulai Sesi & Scoring</span>
+        <i class="fa-solid fa-arrow-right"></i>
+      </button>
+    </form>
+  </main>
+
+  <!-- MODAL CRUD KUSTOM -->
+  <div class="modal" id="modal-crud">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 id="modal-title" style="font-size: 1.1rem; font-weight: 800; color: #0f172a;">Kelola Opsi</h3>
+        <button onclick="closeModal()" style="background:none; border:none; cursor:pointer; font-size:1.2rem; color:#64748b;"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+        <input type="text" id="modal-input" class="form-control" placeholder="Ketik opsi baru..." style="flex: 1;">
+        <button onclick="saveNewCategory()" style="padding: 0 16px; border-radius:12px; font-weight:700; cursor:pointer; border:none; background:#18191c; color:#fff;">Simpan</button>
+      </div>
+
+      <p style="font-size:0.75rem; color:#64748b; margin-bottom:8px; font-weight:700; text-transform: uppercase;">Daftar Pilihan Aktif:</p>
+      <div class="modal-item-list" id="modal-item-list"></div>
+
+      <button onclick="closeModal()" class="form-control" style="width: 100%; cursor:pointer; font-weight:700; background:#f1f5f9; border:none;">Selesai</button>
+    </div>
+  </div>
+
+  <footer class="desktop-footer">
+    <p>Copyright &copy; 2026 &bull; Mela Aulia Syarifah</p>
+  </footer>
+
+  <!-- ========================================== -->
+  <!-- 1. IMPORT FIREBASE SDK -->
+  <!-- ========================================== -->
+   <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // ==========================================
+    // 1. KONFIGURASI FIREBASE (GANTI DENGAN MILIKMU)
+    // ==========================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyBO7QmIO80laPQUqKj80C-QZ74ZHPK6WJA",
+      authDomain: "scoringptu.firebaseapp.com",
+      projectId: "scoringptu",
+      storageBucket: "scoringptu.firebasestorage.app",
+      messagingSenderId: "790472578115",
+      appId: "1:790472578115:web:0f4d1395bc484686c9f0f6",
+      measurementId: "G-Z6TL4KDNJJ"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // ==========================================
+    // 2. VARIABEL GLOBAL
+    // ==========================================
+    let activeType = '';
+    let isSoloMode = false;
+    
+    let masterBantalan = ["Bantalan 1", "Bantalan 2", "Bantalan 3", "Bantalan 4", "Bantalan 5"];
+    let masterSesi = ["Sesi 1", "Sesi 2", "Sesi 3"];
+    let masterBusur = ["Traditional Bow", "Kasumedangan", "Recurve Bow", "Compound Bow", "Barebow"];
+    let masterJarak = ["5 m", "10 m", "15 m", "18 m", "20 m", "30 m", "50 m"];
+    let masterArrow = ["3", "6"];
+    let masterRambahan = ["5", "6", "10", "12"];
+    let savedRoster = [];
+
+    function getActiveUser() {
+      const rawTab = sessionStorage.getItem('activeArcheryUser');
+      if (rawTab) {
+        try {
+          return JSON.parse(rawTab);
+        } catch (e) {}
+      }
+
+      // Hanya dipakai jika tab ini benar-benar belum punya sessionStorage sama sekali
+      const rawLocal = localStorage.getItem('activeArcheryUser');
+      if (rawLocal) {
+        try {
+          const parsed = JSON.parse(rawLocal);
+          sessionStorage.setItem('activeArcheryUser', JSON.stringify(parsed));
+          return parsed;
+        } catch (e) {}
+      }
+
+      return { name: 'Admin Tamu', email: 'guest@archery.com', club: 'Independen' };
+    }
+
+    function getRosterLocalKey() {
+      const activeUser = getActiveUser();
+      return `savedRoster_${activeUser.email.replace(/[^a-z0-9]/gi, '_')}`;
+    }
+
+    function collectCurrentParticipantsForm() {
+      const names = document.querySelectorAll('.p-name');
+      const clubs = document.querySelectorAll('.p-club');
+      const bantalans = document.querySelectorAll('.p-bantalan');
+      const sesis = document.querySelectorAll('.p-sesi');
+      const list = [];
+
+      for (let i = 0; i < names.length; i++) {
+        const namaVal = names[i].value.trim();
+        const klubVal = clubs[i].value.trim();
+        const bantalanVal = bantalans[i] ? bantalans[i].value : 'Bantalan 1';
+        const sesiVal = sesis[i] ? sesis[i].value : 'Sesi 1';
+
+        if (namaVal !== '' || klubVal !== '') {
+          list.push({
+            name: namaVal,
+            club: klubVal || 'Independen',
+            bantalan: bantalanVal,
+            sesi: sesiVal
+          });
+        }
+      }
+      return list;
+    }
+
+    // =========================================================================
+    // 3. FUNGSI PENYIMPANAN PENGATURAN & ROSTER PESERTA KE FIREBASE + LOKAL
+    // =========================================================================
+    async function loadSettingsFromFirebase() {
+      const activeUser = getActiveUser();
+      const docId = `settings_${activeUser.email.replace(/[^a-z0-9]/gi, '_')}`;
+      const localRoster = JSON.parse(localStorage.getItem(getRosterLocalKey()) || 'null');
+
+      try {
+        const docRef = doc(db, "settings", docId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.busur) masterBusur = data.busur;
+          if (data.jarak) masterJarak = data.jarak;
+          if (data.arrow) masterArrow = data.arrow;
+          if (data.rambahan) masterRambahan = data.rambahan;
+          if (data.bantalan) masterBantalan = data.bantalan;
+          if (data.sesi) masterSesi = data.sesi;
+          if (Array.isArray(data.savedParticipants)) {
+            savedRoster = data.savedParticipants;
+          }
+        }
+
+        if (Array.isArray(localRoster) && localRoster.length > 0 && savedRoster.length === 0) {
+          savedRoster = localRoster;
+        }
+        
+        renderAllOptions();
+      } catch (error) {
+        console.error("Gagal memuat pengaturan:", error);
+        if (Array.isArray(localRoster)) {
+          savedRoster = localRoster;
+        }
+        renderAllOptions();
+      }
+    }
+
+    async function saveSettingsToFirebase(customRoster = null) {
+      const activeUser = getActiveUser();
+      const docId = `settings_${activeUser.email.replace(/[^a-z0-9]/gi, '_')}`;
+      const rosterToSave = customRoster !== null ? customRoster : collectCurrentParticipantsForm();
+      savedRoster = rosterToSave;
+      localStorage.setItem(getRosterLocalKey(), JSON.stringify(rosterToSave));
+
+      try {
+        await setDoc(doc(db, "settings", docId), {
+          ownerEmail: activeUser.email,
+          busur: masterBusur,
+          jarak: masterJarak,
+          arrow: masterArrow,
+          rambahan: masterRambahan,
+          bantalan: masterBantalan,
+          sesi: masterSesi,
+          savedParticipants: rosterToSave,
+          updatedAt: new Date().getTime()
+        }, { merge: true });
+      } catch (error) {
+        console.error("Gagal menyimpan pengaturan:", error);
+      }
+    }
+
+    // =========================================================================
+    // 4. FUNGSI RENDER UI
+    // =========================================================================
+    function renderAllOptions() {
+      const selectBusur = document.getElementById('select-busur');
+      selectBusur.innerHTML = '';
+      masterBusur.forEach(b => selectBusur.add(new Option(b, b)));
+
+      const gridJarak = document.getElementById('grid-jarak');
+      gridJarak.innerHTML = '';
+      masterJarak.forEach(j => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `btn-option ${j === '18 m' ? 'active' : ''}`;
+        btn.innerText = j;
+        btn.onclick = function() { selectJarak(this); };
+        gridJarak.appendChild(btn);
+      });
+
+      const selectArrow = document.getElementById('select-arrow');
+      selectArrow.innerHTML = '';
+      masterArrow.forEach(a => selectArrow.add(new Option(`${a} Arrow`, a)));
+
+      const selectRambahan = document.getElementById('select-rambahan');
+      selectRambahan.innerHTML = '';
+      masterRambahan.forEach(r => selectRambahan.add(new Option(`${r} Rambahan`, r)));
+    }
+
+    function addParticipantRow(nama = '', klub = '', defaultBantalan = '', defaultSesi = '') {
+      const list = document.getElementById('participant-list');
+      if (!list) return;
+      
+      const row = document.createElement('div');
+      row.className = 'participant-row';
+      
+      let bantalanOptions = masterBantalan.map(b => `<option value="${b}" ${b === defaultBantalan ? 'selected' : ''}>${b}</option>`).join('');
+      let sesiOptions = masterSesi.map(s => `<option value="${s}" ${s === defaultSesi ? 'selected' : ''}>${s}</option>`).join('');
+
+      row.innerHTML = `
+        <input type="text" class="form-control p-name" placeholder="Nama Pemanah" value="${nama}">
+        <input type="text" class="form-control p-club" placeholder="Nama Klub" value="${klub}">
+        <select class="form-control p-bantalan" title="Nomor Bantalan">${bantalanOptions}</select>
+        <select class="form-control p-sesi" title="Sesi">${sesiOptions}</select>
+        <button type="button" class="btn-danger" onclick="removeParticipantRow(this)"><i class="fa-solid fa-trash"></i> Hapus</button>
+      `;
+      list.appendChild(row);
+    }
+
+    async function removeParticipantRow(btnEl) {
+      btnEl.parentElement.remove();
+      await saveSettingsToFirebase();
+    }
+
+    async function clearAllParticipants() {
+      if (!confirm("Kosongkan semua baris daftar peserta?")) return;
+      document.getElementById('participant-list').innerHTML = '';
+      await saveSettingsToFirebase([]);
+      addParticipantRow();
+    }
+
+    // =========================================================================
+    // 5. FUNGSI MODAL & SIMPAN
+    // =========================================================================
+    function openModal(type) {
+      activeType = type;
+      document.getElementById('modal-input').value = '';
+      const title = document.getElementById('modal-title');
+      
+      if(type === 'busur') title.innerText = 'Kelola Jenis Busur';
+      if(type === 'jarak') title.innerText = 'Kelola Jarak Tembak';
+      if(type === 'arrow') title.innerText = 'Kelola Arrow per Rambahan';
+      if(type === 'rambahan') title.innerText = 'Kelola Jumlah Rambahan';
+      if(type === 'bantalan') title.innerText = 'Kelola Opsi Bantalan';
+      if(type === 'sesi') title.innerText = 'Kelola Opsi Sesi';
+      
+      renderModalItems();
+      document.getElementById('modal-crud').classList.add('active');
+    }
+
+    function closeModal() { document.getElementById('modal-crud').classList.remove('active'); }
+
+    function renderModalItems() {
+      const itemList = document.getElementById('modal-item-list');
+      itemList.innerHTML = '';
+      
+      let arr = [];
+      if(activeType === 'busur') arr = masterBusur;
+      if(activeType === 'jarak') arr = masterJarak;
+      if(activeType === 'arrow') arr = masterArrow;
+      if(activeType === 'rambahan') arr = masterRambahan;
+      if(activeType === 'bantalan') arr = masterBantalan;
+      if(activeType === 'sesi') arr = masterSesi;
+
+      if(arr.length === 0) {
+        itemList.innerHTML = `<div style="text-align:center; padding:10px; color:#94a3b8; font-size:0.8rem;">Belum ada opsi.</div>`;
+        return;
+      }
+
+      arr.forEach((val) => {
+        itemList.innerHTML += `
+          <div class="modal-item">
+            <span>${val}</span> 
+            <button onclick="deleteCustomOption('${val}')" style="background:none; border:none; color:#ef4444; cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        `;
+      });
+    }
+
+    async function saveNewCategory() {
+      const val = document.getElementById('modal-input').value.trim();
+      if(!val) return alert('Isi teks dulu ya!');
+      
+      let arr = [];
+      if(activeType === 'busur') arr = masterBusur;
+      if(activeType === 'jarak') arr = masterJarak;
+      if(activeType === 'arrow') arr = masterArrow;
+      if(activeType === 'rambahan') arr = masterRambahan;
+      if(activeType === 'bantalan') arr = masterBantalan;
+      if(activeType === 'sesi') arr = masterSesi;
+
+      let finalVal = val;
+      if(activeType === 'jarak' && !val.includes('m')) finalVal = val + ' m';
+      
+      if(!arr.includes(finalVal)) {
+        arr.push(finalVal);
+        await saveSettingsToFirebase();
+        renderAllOptions();
+      }
+      
+      document.getElementById('modal-input').value = '';
+      renderModalItems();
+    }
+
+    async function deleteCustomOption(val) {
+      if(!confirm(`Hapus opsi "${val}"?`)) return;
+
+      let arr = [];
+      if(activeType === 'busur') arr = masterBusur;
+      if(activeType === 'jarak') arr = masterJarak;
+      if(activeType === 'arrow') arr = masterArrow;
+      if(activeType === 'rambahan') arr = masterRambahan;
+      if(activeType === 'bantalan') arr = masterBantalan;
+      if(activeType === 'sesi') arr = masterSesi;
+
+      const index = arr.indexOf(val);
+      if(index > -1) {
+        arr.splice(index, 1);
+        await saveSettingsToFirebase();
+        renderAllOptions();
+      }
+      renderModalItems();
+    }
+
+    // =========================================================================
+    // 6. FUNGSI LAINNYA
+    // =========================================================================
+    function toggleMobileSidebar() { document.getElementById('mobile-sidebar').classList.toggle('active'); document.getElementById('mobile-overlay').classList.toggle('active'); }
+    function setMode(mode) {
+      const btnSolo = document.getElementById('btn-solo');
+      const btnGroup = document.getElementById('btn-group');
+      const eventInfo = document.getElementById('event-info-card');
+      const participants = document.getElementById('participants-card');
+      if(mode === 'solo') { isSoloMode = true; btnSolo.classList.add('active'); btnGroup.classList.remove('active'); eventInfo.style.display = 'none'; participants.style.display = 'none'; } 
+      else { isSoloMode = false; btnGroup.classList.add('active'); btnSolo.classList.remove('active'); eventInfo.style.display = 'block'; participants.style.display = 'block'; }
+    }
+
+    function selectJarak(element) {
+      document.querySelectorAll('#grid-jarak .btn-option').forEach(btn => btn.classList.remove('active'));
+      element.classList.add('active');
+    }
+
+    function loadActiveUserProfile() {
+      const activeUser = getActiveUser();
+      document.getElementById('user-name-text').innerText = activeUser.name || 'Archer Pro';
+      document.getElementById('user-club-text').innerText = activeUser.club || 'Klub Panahan';
+      if (activeUser.name) {
+        const nameParts = activeUser.name.trim().split(' ').filter(n => n.length > 0);
+        document.getElementById('user-avatar-box').innerText = nameParts.length >= 2 ? (nameParts[0][0] + nameParts[1][0]).toUpperCase() : nameParts[0][0].toUpperCase();
+      }
+    }
+
+    async function loadParticipantsFromDBCategory(selectedCategory) {
+      if (!selectedCategory) return;
+      const activeUser = getActiveUser();
+      const list = document.getElementById('participant-list');
+      list.innerHTML = `<div style="text-align:center; padding:10px;"><i class="fa-solid fa-spinner fa-spin"></i> Mengambil data dari server...</div>`;
+      document.getElementById('db-category-picker').value = "";
+
+      try {
+        const q = query(collection(db, "participants"), where("ownerEmail", "==", activeUser.email));
+        const querySnapshot = await getDocs(q);
+        
+        let matchedParticipants = [];
+        querySnapshot.forEach((doc) => {
+          let data = doc.data();
+          if (selectedCategory === 'ALL' || (data.kategori && data.kategori.toLowerCase() === selectedCategory.toLowerCase())) {
+            matchedParticipants.push(data);
+          }
+        });
+
+        list.innerHTML = '';
+        if (matchedParticipants.length === 0) {
+          alert(`Tidak ditemukan peserta untuk kategori "${selectedCategory}".`);
+          return;
+        }
+        matchedParticipants.forEach(p => {
+          addParticipantRow(p.nama, p.klub || 'Independen');
+        });
+        if (selectedCategory !== 'ALL') {
+          const selectBusur = document.getElementById('select-busur');
+          if (selectBusur) selectBusur.value = selectedCategory;
+        }
+        await saveSettingsToFirebase();
+      } catch (error) {
+        console.error("Error fetching participants:", error);
+        list.innerHTML = '';
+        alert("Gagal mengambil data peserta: " + error.message);
+      }
+    }
+
+    async function goToScoring() {
+      const activeUser = getActiveUser();
+      const activeJarakBtn = document.querySelector('#grid-jarak .btn-option.active');
+      const jarakVal = activeJarakBtn ? activeJarakBtn.innerText : '18 m';
+      
+      let participants = [];
+      let rosterToKeep = [];
+
+      if (isSoloMode) {
+        participants.push({ name: activeUser.name, club: activeUser.club || 'Independen', bantalan: 'Bantalan 1', sesi: 'Sesi 1', scores: [] });
+        rosterToKeep = savedRoster.length > 0 ? savedRoster : [{ name: activeUser.name, club: activeUser.club || 'Independen', bantalan: 'Bantalan 1', sesi: 'Sesi 1' }];
+      } else {
+        const names = document.querySelectorAll('.p-name');
+        const clubs = document.querySelectorAll('.p-club');
+        const bantalans = document.querySelectorAll('.p-bantalan');
+        const sesis = document.querySelectorAll('.p-sesi');
+
+        for(let i=0; i<names.length; i++) {
+          const namaTrim = names[i].value.trim();
+          const klubTrim = clubs[i].value.trim() || 'Independen';
+          const bantalanVal = bantalans[i] ? bantalans[i].value : 'Bantalan 1';
+          const sesiVal = sesis[i] ? sesis[i].value : 'Sesi 1';
+
+          if(namaTrim !== '') {
+            participants.push({
+              name: namaTrim,
+              club: klubTrim,
+              bantalan: bantalanVal,
+              sesi: sesiVal,
+              scores: []
+            });
+            rosterToKeep.push({
+              name: namaTrim,
+              club: klubTrim,
+              bantalan: bantalanVal,
+              sesi: sesiVal
+            });
+          }
+        }
+      }
+
+      if(participants.length === 0) { alert('Masukkan minimal 1 peserta untuk memulai!'); return; }
+
+      await saveSettingsToFirebase(rosterToKeep);
+
+      const config = {
+        ownerEmail: activeUser.email,
+        eventName: isSoloMode ? `Latihan Solo - ${activeUser.name}` : (document.getElementById('event-name').value || 'Internal Match'),
+        location: document.getElementById('event-location') ? document.getElementById('event-location').value : 'Lapangan Panahan',
+        busur: document.getElementById('select-busur').value,
+        jarak: jarakVal,
+        arrowCount: parseInt(document.getElementById('select-arrow').value),
+        totalEnd: parseInt(document.getElementById('select-rambahan').value),
+        participants: participants,
+        createdAt: new Date().getTime(),
+        status: "active"
+      };
+
+      try {
+        const sessionId = `active_session_${activeUser.email.replace(/[^a-z0-9]/gi, '_')}`;
+        await setDoc(doc(db, "sessions", sessionId), config);
+        localStorage.setItem('archeryConfig', JSON.stringify(config));
+        window.location.href = 'scoring.html';
+      } catch (error) {
+        console.error("Error saving session:", error);
+        alert("Gagal menyimpan sesi ke server: " + error.message);
+      }
+    }
+
+    // ==========================================
+    // INIT
+    // ==========================================
+    function getTabActiveUser() {
+      try {
+        const rawTab = sessionStorage.getItem('activeArcheryUser');
+        if (rawTab) return JSON.parse(rawTab);
+      } catch (e) {}
+
+      try {
+        const rawLocal = localStorage.getItem('activeArcheryUser');
+        if (rawLocal) return JSON.parse(rawLocal);
+      } catch (e) {}
+
+      return null;
+    }
+
+    function syncAdminNavAccess() {
+      const user = getTabActiveUser();
+      const isAdmin = Boolean(
+        user &&
+        (String(user.role || '').toLowerCase() === 'admin' ||
+         String(user.email || '').trim().toLowerCase() === 'mimin@gmail.com')
+      );
+
+      const deskLink = document.getElementById('nav-public-score-desktop');
+      const mobLink = document.getElementById('nav-public-score-mobile');
+
+      if (deskLink) deskLink.style.display = isAdmin ? 'inline-flex' : 'none';
+      if (mobLink) mobLink.style.display = isAdmin ? 'flex' : 'none';
+    }
+
+    document.addEventListener("DOMContentLoaded", async function() {
+      syncAdminNavAccess();
+
+      const currentUser = getActiveUser();
+      loadActiveUserProfile();
+
+      const path = window.location.pathname;
+      let currentRole = 'admin';
+      if (path.includes('display.html')) currentRole = 'display';
+      else if (path.includes('scoring.html')) currentRole = 'scorer';
+      else if (path.includes('pendaftaran.html') || path.includes('home.html')) currentRole = 'admin';
+
+      const deskPicker = document.getElementById('app-role-picker-desktop');
+      const mobPicker = document.getElementById('app-role-picker-mobile');
+      if (deskPicker) deskPicker.value = currentRole;
+      if (mobPicker) mobPicker.value = currentRole;
+
+      // Bersihkan dulu tampilan list sebelum fetch data akun ini
+      const list = document.getElementById('participant-list');
+      if (list) {
+        list.innerHTML = `<div style="text-align:center; padding:12px; color:#64748b; font-size:0.85rem;">Memuat daftar peserta untuk ${currentUser.email}...</div>`;
+      }
+
+      await loadSettingsFromFirebase();
+
+      if (list) {
+        list.innerHTML = '';
+        if (Array.isArray(savedRoster) && savedRoster.length > 0) {
+          savedRoster.forEach(p => {
+            addParticipantRow(p.name || '', p.club || '', p.bantalan || '', p.sesi || '');
+          });
+        } else {
+          // Akun baru: mulai bersih dengan nama akun ini saja, bukan data admin
+          addParticipantRow(currentUser.name || '', currentUser.club || 'Independen');
+        }
+      }
+    });
+
+    window.toggleMobileSidebar = toggleMobileSidebar;
+    window.setMode = setMode;
+    window.selectJarak = selectJarak;
+    window.addParticipantRow = addParticipantRow;
+    window.removeParticipantRow = removeParticipantRow;
+    window.clearAllParticipants = clearAllParticipants;
+    window.loadParticipantsFromDBCategory = loadParticipantsFromDBCategory;
+    window.openModal = openModal;
+    window.closeModal = closeModal;
+    window.saveNewCategory = saveNewCategory;
+    window.deleteCustomOption = deleteCustomOption;
+    window.goToScoring = goToScoring;
+    window.switchRole = function(role) {
+      if (role === 'admin') window.location.href = 'pendaftaran.html';
+      else if (role === 'display') window.location.href = 'display.html';
+      else if (role === 'scorer') window.location.href = 'scoring.html';
+    };
+  </script>
+</body>
+</html>

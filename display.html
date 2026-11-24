@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Display - SCORINGPTU</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background-color: #f3f5f9; color: #1e293b; min-height: 100vh; display: flex; flex-direction: column; }
+
+    .desktop-navbar { background-color: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 14px 5%; position: sticky; top: 0; z-index: 90; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02); gap: 12px; flex-wrap: wrap; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.2rem; color: #0f172a; }
+    .brand-icon { background-color: #18191c; color: #ffffff; padding: 6px 10px; border-radius: 12px; font-size: 1rem; }
+    .nav-actions-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .btn-public-score-link { color: #64748b; text-decoration: none; font-size: 0.85rem; font-weight: 700; padding: 8px 14px; border-radius: 12px; border: 1px solid #e2e8f0; background: #f8fafc; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-public-score-link:hover { background-color: #18191c; color: #ffffff; border-color: #18191c; }
+    .role-select { background-color: #18191c; color: #ffffff; border: 1px solid #e2e8f0; padding: 8px 14px; border-radius: 12px; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+
+    main { max-width: 1100px; width: 100%; margin: 0 auto; padding: 24px 20px 60px 20px; flex: 1; }
+
+    .card { background: #ffffff; border-radius: 20px; padding: 24px; margin-bottom: 20px; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02); }
+    
+    .podium-container { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 16px; margin-bottom: 24px; align-items: flex-end; }
+    .podium-box { background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 20px; text-align: center; display: flex; flex-direction: column; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+    .podium-box.rank-1-box { border-color: #fbbf24; background: linear-gradient(to bottom, #ffffff, #fffbeb); transform: translateY(-10px); box-shadow: 0 10px 25px rgba(251, 191, 36, 0.15); }
+    .podium-avatar { width: 52px; height: 52px; border-radius: 50%; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; margin-bottom: 10px; border: 2px solid #fde047; }
+    .podium-name { font-weight: 800; font-size: 1rem; color: #0f172a; margin-bottom: 2px; }
+    .podium-score { background: #f8fafc; border: 1px solid #e2e8f0; padding: 4px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 800; color: #4f46e5; margin-top: 6px; }
+
+    .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    .leaderboard-table th { text-align: left; font-size: 0.75rem; color: #64748b; padding: 12px; border-bottom: 2px solid #f1f5f9; text-transform: uppercase; font-weight: 800; }
+    .leaderboard-table td { padding: 14px 12px; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
+
+    .live-dot { width: 10px; height: 10px; background-color: #22c55e; border-radius: 50%; display: inline-block; margin-right: 6px; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+    .desktop-footer { display: block; background: #222; color: white; text-align: center; padding: 20px; margin-top: 50px; }
+    .mobile-footer-text { display: none; }
+
+    @media (max-width: 768px) {
+      .desktop-navbar { padding: 12px 16px; }
+      .brand span { font-size: 1rem; }
+      main { padding: 12px; }
+      .podium-container { grid-template-columns: 1fr; gap: 10px; }
+      .podium-box.rank-1-box { transform: none; }
+      
+      .leaderboard-table thead { display: none; }
+      .leaderboard-table, .leaderboard-table tbody, .leaderboard-table tr, .leaderboard-table td { display: block; width: 100%; }
+      .leaderboard-table tr { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; margin-bottom: 12px; padding: 12px 16px; position: relative; }
+      .leaderboard-table td { padding: 6px 0; border: none; display: flex; justify-content: space-between; align-items: center; }
+      .leaderboard-table td:nth-child(1) { font-weight: 800; color: #4f46e5; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 6px; }
+      .leaderboard-table td:nth-child(1)::before { content: "Peringkat"; color: #64748b; font-size: 0.75rem; }
+      .leaderboard-table td:nth-child(2) { flex-direction: column; align-items: flex-start; gap: 4px; }
+      .leaderboard-table td:nth-child(3) { font-size: 0.8rem; color: #64748b; }
+      .leaderboard-table td:nth-child(3)::before { content: "Klub"; color: #94a3b8; font-size: 0.75rem; }
+      .leaderboard-table td:nth-child(4) { justify-content: space-between; }
+      .leaderboard-table td:nth-child(4)::before { content: "Jumlah X"; color: #64748b; font-size: 0.75rem; }
+      .leaderboard-table td:nth-child(5) { border-top: 1px solid #e2e8f0; padding-top: 8px; margin-top: 6px; font-size: 1.1rem !important; }
+      .leaderboard-table td:nth-child(5)::before { content: "Total Poin"; color: #0f172a; font-weight: 700; font-size: 0.85rem; }
+
+      .desktop-footer { display: none; }
+      .mobile-footer-text { display: block; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="desktop-navbar">
+    <div class="brand">
+      <div class="brand-icon">🎯</div>
+      <span>SCORING<span style="color:#6366f1;">PTU</span> <span style="font-size:0.8rem; background:#e0e7ff; color:#3730a3; padding:2px 8px; border-radius:6px; margin-left:6px;">LIVE DISPLAY</span></span>
+    </div>
+    <div class="nav-actions-right">
+      <a href="index.html" id="nav-public-score-desktop" class="btn-public-score-link" style="display: none;"><i class="fa-solid fa-table"></i> Public Score</a>
+      <select id="app-role-picker" class="role-select" onchange="switchRole(this.value)">
+        <option value="scorer">📱 Scorer (HP)</option>
+        <option value="display" selected>🖥️ Live Display</option>
+        <option value="admin">⚙️ Admin / Panitia</option>
+      </select>
+    </div>
+  </header>
+
+  <main>
+    <div class="card" style="background: #18191c; color: #ffffff;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <span style="font-size: 0.8rem; font-weight: 800; color: #22c55e;"><span class="live-dot"></span> LIVE SEMENTARA BERLANGSUNG</span>
+          <h1 id="live-event-title" style="font-size: 1.3rem; font-weight: 800; margin-top: 4px;">Memuat Sesi...</h1>
+          <p id="live-event-meta" style="font-size: 0.8rem; color: #94a3b8;">-</p>
+        </div>
+        <div style="text-align: right;">
+          <span style="font-size: 0.7rem; color: #94a3b8;">LOKASI</span>
+          <div id="live-event-location" style="font-weight: 700; font-size: 0.9rem;">-</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="podium-container" id="display-podium"></div>
+
+    <div class="card">
+      <h3 style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin-bottom: 14px;">📊 Live Leaderboard Sesi Aktif</h3>
+      <table class="leaderboard-table">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Pemanah</th>
+            <th>Klub</th>
+            <th style="text-align:center;">X Count</th>
+            <th style="text-align:right;">Skor Total</th>
+          </tr>
+        </thead>
+        <tbody id="display-table-body">
+          <tr><td colspan="5" style="text-align:center; padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> Menghubungkan ke server...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <footer class="desktop-footer">
+    <p>Copyright &copy; 2026 &bull; Mela Aulia Syarifah</p>
+  </footer>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBO7QmIO80laPQUqKj80C-QZ74ZHPK6WJA",
+      authDomain: "scoringptu.firebaseapp.com",
+      projectId: "scoringptu",
+      storageBucket: "scoringptu.firebasestorage.app",
+      messagingSenderId: "790472578115",
+      appId: "1:790472578115:web:0f4d1395bc484686c9f0f6",
+      measurementId: "G-Z6TL4KDNJJ"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    function getActiveUser() {
+      const rawTab = sessionStorage.getItem('activeArcheryUser');
+      if (rawTab) {
+        try {
+          return JSON.parse(rawTab);
+        } catch (e) {}
+      }
+      const rawLocal = localStorage.getItem('activeArcheryUser');
+      if (rawLocal) {
+        try {
+          const parsed = JSON.parse(rawLocal);
+          sessionStorage.setItem('activeArcheryUser', JSON.stringify(parsed));
+          return parsed;
+        } catch (e) {}
+      }
+      return { name: 'Admin Tamu', email: 'guest@archery.com', club: 'Independen' };
+    }
+
+    function getAccountKey() {
+      const activeUser = getActiveUser();
+      const cleanEmail = String(activeUser.email || 'guest@archery.com').trim().toLowerCase();
+      return cleanEmail.replace(/[^a-z0-9]/gi, '_');
+    }
+
+    function syncAdminNavAccess() {
+      const user = getActiveUser();
+      const isAdmin = Boolean(
+        user &&
+        (String(user.role || '').toLowerCase() === 'admin' ||
+         String(user.email || '').trim().toLowerCase() === 'mimin@gmail.com')
+      );
+
+      const deskLink = document.getElementById('nav-public-score-desktop');
+      if (deskLink) deskLink.style.display = isAdmin ? 'inline-flex' : 'none';
+    }
+
+    function switchRole(role) {
+      if (role === 'admin') window.location.href = 'pendaftaran.html';
+      else if (role === 'display') window.location.href = 'display.html';
+      else if (role === 'scorer') window.location.href = 'scoring.html';
+    }
+
+    function getScoreNumericValue(code) {
+      if (code === 'X') return 10;
+      if (code === 'X_WBN') return 6;
+      if (code === 'M' || code === undefined || code === null) return 0;
+      return parseInt(code, 10) || 0;
+    }
+
+    let unsubscribeSnapshot = null;
+
+    function startLiveDisplay() {
+      if (typeof unsubscribeSnapshot === 'function') {
+        unsubscribeSnapshot();
+        unsubscribeSnapshot = null;
+      }
+
+      const activeUser = getActiveUser();
+      const accountKey = getAccountKey();
+      const docId = `active_session_${accountKey}`;
+      const docRef = doc(db, "sessions", docId);
+
+      showEmptyState(`Menghubungkan ke sesi milik ${activeUser.email}...`);
+
+      unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
+        if (!docSnap.exists()) {
+          showEmptyState(`Belum ada sesi aktif untuk akun ${activeUser.email}.`);
+          return;
+        }
+
+        const sessionData = docSnap.data();
+
+        if (sessionData.status === 'completed') {
+          showEmptyState("Sesi telah selesai. Silakan buat sesi baru.");
+          return;
+        }
+
+        renderLiveDisplay(sessionData);
+      }, (error) => {
+        console.error("Error listening to session:", error);
+        showEmptyState("Gagal terhubung ke server: " + error.message);
+      });
+    }
+
+    function showEmptyState(msg) {
+      document.getElementById('live-event-title').innerText = "Tidak Ada Sesi";
+      document.getElementById('live-event-meta').innerText = "-";
+      document.getElementById('live-event-location').innerText = "-";
+      document.getElementById('display-podium').innerHTML = "";
+      document.getElementById('display-table-body').innerHTML = `<tr><td colspan="5" style="text-align:center; color:#64748b; padding:20px;">${msg}</td></tr>`;
+    }
+
+    function renderLiveDisplay(config) {
+      if (!config || !config.participants || config.participants.length === 0) {
+        showEmptyState("Sesi tidak memiliki peserta.");
+        return;
+      }
+
+      document.getElementById('live-event-title').innerText = config.eventName || 'Sesi Latihan Panahan';
+      document.getElementById('live-event-meta').innerText = `${config.busur} • ${config.jarak} • ${config.totalEnd} Rambahan (${config.arrowCount} Arrow)`;
+      document.getElementById('live-event-location').innerText = config.location || 'Lapangan Utama';
+
+      let list = config.participants.map((p, pIdx) => {
+        let totalScore = 0;
+        let totalX = 0;
+        let endDetailsHTML = '';
+
+        if (p.scores && Array.isArray(p.scores) && p.scores.length > 0) {
+          p.scores.forEach((endObj, eIdx) => {
+            let endSum = 0;
+            const arrows = Array.isArray(endObj) ? endObj : (endObj.arrows || []);
+            arrows.forEach(code => {
+              endSum += getScoreNumericValue(code);
+              if (code === 'X' || code === 'X_WBN') totalX += 1;
+            });
+            totalScore += endSum;
+
+            const formattedArrows = arrows.map(c => c === 'X_WBN' ? 'X(WBN)' : (c === 'X' ? 'X(10)' : c)).join(' • ');
+            endDetailsHTML += `<div style="font-size:0.75rem; color:#64748b; font-weight:600;">End ${eIdx + 1}: ${formattedArrows} (${endSum} Poin)</div>`;
+          });
+        }
+
+        let activeInputDisplay = '';
+        if (config.activeLiveInput && config.activeLiveInput.archerIndex === pIdx) {
+          const currentInputArr = config.activeLiveInput.arrows;
+          if (currentInputArr && currentInputArr.length > 0) {
+            let activeSum = 0;
+            currentInputArr.forEach(code => {
+              activeSum += getScoreNumericValue(code);
+              if (code === 'X' || code === 'X_WBN') totalX += 1;
+            });
+            totalScore += activeSum;
+
+            const formattedActive = currentInputArr.map(c => c === 'X_WBN' ? 'X(WBN)' : (c === 'X' ? 'X(10)' : c)).join(' • ');
+
+            activeInputDisplay = `
+              <div style="font-size:0.8rem; color:#ea580c; font-weight:800; margin-top:6px; background:#fff7ed; padding:4px 8px; border-radius:6px; border:1px solid #fdba74; display:inline-block;">
+                ✒️ Sedang Diinput: ${formattedActive} (${activeSum} Poin)
+              </div>
+            `;
+          }
+        }
+
+        return { ...p, totalScore, totalX, endDetailsHTML, activeInputDisplay };
+      });
+
+      list.sort((a, b) => b.totalScore - a.totalScore || b.totalX - a.totalX);
+
+      const podium = document.getElementById('display-podium');
+      podium.innerHTML = '';
+      const order = [1, 0, 2];
+
+      order.forEach(rankIdx => {
+        const p = list[rankIdx];
+        if (!p) return;
+        const isRank1 = (rankIdx === 0);
+        const nameParts = (p.name || 'User').trim().split(' ').filter(n => n.length > 0);
+        const initials = nameParts.length >= 2 ? (nameParts[0][0] + nameParts[1][0]).toUpperCase() : nameParts[0][0].toUpperCase();
+
+        const box = document.createElement('div');
+        box.className = `podium-box ${isRank1 ? 'rank-1-box' : ''}`;
+        box.innerHTML = `
+          <div style="font-size: 0.75rem; font-weight:800; color: ${isRank1 ? '#d97706' : '#64748b'}; margin-bottom:4px;">#${rankIdx + 1}</div>
+          <div class="podium-avatar">${initials}</div>
+          <div class="podium-name">${p.name}</div>
+          <div style="font-size:0.75rem; color:#64748b;">${p.club || 'Independen'}</div>
+          <div class="podium-score">${p.totalScore} Poin</div>
+        `;
+        podium.appendChild(box);
+      });
+
+      const tbody = document.getElementById('display-table-body');
+      tbody.innerHTML = '';
+      list.forEach((p, idx) => {
+        let displayDetail = '';
+        if (p.activeInputDisplay || p.endDetailsHTML) {
+          displayDetail = `<div style="margin-top: 4px; display: flex; flex-direction: column; gap: 2px;">${p.endDetailsHTML}${p.activeInputDisplay}</div>`;
+        } else {
+          displayDetail = `<br><span style="font-size:0.75rem; color:#94a3b8; font-style:italic;">Belum ada panahan</span>`;
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>#${idx + 1}</strong></td>
+          <td>
+            <strong style="color:#0f172a;">${p.name}</strong>
+            ${displayDetail}
+          </td>
+          <td><span style="color:#64748b;">${p.club || 'Independen'}</span></td>
+          <td style="text-align:center;"><span style="background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:6px; font-weight:800; font-size:0.8rem;">${p.totalX}X</span></td>
+          <td style="text-align:right; font-weight:800; color:#4f46e5; font-size: 1.05rem; vertical-align: top;">${p.totalScore} Poin</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+      syncAdminNavAccess();
+      startLiveDisplay();
+    });
+
+    window.switchRole = switchRole;
+  </script>
+</body>
+</html>

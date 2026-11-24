@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Public Scoreboard - SCORINGPTU</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-font-smoothing: antialiased; }
+    body { background-color: #f3f5f9; color: #1e293b; min-height: 100vh; display: flex; flex-direction: column; font-size: clamp(0.82rem, 1.5vw, 0.92rem); }
+
+    /* NAVBAR UTAMA */
+    .desktop-navbar {
+      background-color: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 14px 5%;
+      position: sticky; top: 0; z-index: 90; display: flex; align-items: center;
+      justify-content: space-between; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+      flex-wrap: wrap; gap: 10px;
+    }
+
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.2rem; color: #0f172a; }
+    .brand-icon { background-color: #18191c; color: #ffffff; padding: 6px 10px; border-radius: 12px; font-size: 1rem; }
+
+    /* Navigasi Desktop: khusus admin */
+    .nav-links-desktop { display: none; gap: 10px; align-items: center; }
+    .nav-links-desktop.admin-only-visible { display: flex; }
+
+    .nav-links-desktop a {
+      color: #64748b; text-decoration: none; font-size: 0.85rem; font-weight: 600;
+      padding: 8px 14px; border-radius: 12px; transition: all 0.2s ease;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .nav-links-desktop a:hover, .nav-links-desktop a.active { background-color: #18191c; color: #ffffff; }
+
+    .header-right-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+    .admin-badge {
+      display: none; background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe;
+      padding: 6px 12px; border-radius: 999px; font-size: 0.78rem; font-weight: 800;
+      align-items: center; gap: 6px;
+    }
+    .admin-badge.active { display: inline-flex; }
+
+    .btn-logout-admin {
+      display: none; background: #fee2e2; color: #dc2626; border: 1px solid #fecaca;
+      padding: 8px 12px; border-radius: 10px; font-weight: 700; font-size: 0.8rem;
+      cursor: pointer; align-items: center; gap: 6px; transition: background 0.2s;
+    }
+    .btn-logout-admin.active { display: inline-flex; }
+    .btn-logout-admin:hover { background: #fecaca; }
+
+    .btn-login-redirect {
+      background: #0f9d58; color: white; padding: 8px 14px; border-radius: 10px;
+      font-weight: 700; font-size: 0.82rem; text-decoration: none; display: inline-flex;
+      align-items: center; gap: 6px; transition: background 0.2s; white-space: nowrap;
+    }
+    .btn-login-redirect:hover { background: #0b8043; }
+
+    /* SIDEBAR MOBILE: khusus admin */
+    .btn-hamburger-mobile {
+      display: none; background: none; border: none; font-size: 1.4rem;
+      color: #0f172a; cursor: pointer;
+    }
+    .btn-hamburger-mobile.admin-only-visible { display: inline-flex; }
+
+    .mobile-sidebar-overlay {
+      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(4px); z-index: 200; display: none;
+    }
+    .mobile-sidebar-overlay.active.admin-only-visible { display: block; }
+
+    .mobile-sidebar {
+      position: fixed; top: 0; left: -280px; width: 280px; height: 100%;
+      background-color: #18191c; color: #ffffff; z-index: 210;
+      transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: flex;
+      flex-direction: column; justify-content: space-between; padding: 24px 20px;
+      box-shadow: 10px 0 30px rgba(0,0,0,0.2);
+    }
+    .mobile-sidebar.active.admin-only-visible { left: 0; }
+
+    .mobile-nav-menu { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
+    .mobile-nav-menu a {
+      color: #94a3b8; text-decoration: none; padding: 12px 16px; border-radius: 12px;
+      font-weight: 600; display: flex; align-items: center; gap: 12px;
+    }
+    .mobile-nav-menu a.active, .mobile-nav-menu a:hover { background-color: rgba(255, 255, 255, 0.15); color: #ffffff; }
+
+    main { max-width: 1200px; width: 100%; margin: 0 auto; padding: clamp(16px, 3vw, 24px) 16px; flex: 1; }
+
+    .page-header { margin-bottom: 18px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; }
+    .page-header h1 { font-size: clamp(1.15rem, 2.8vw, 1.5rem); font-weight: 800; color: #0f172a; line-height: 1.3; }
+    .page-header p { font-size: clamp(0.78rem, 1.6vw, 0.88rem); color: #64748b; margin-top: 4px; }
+    .sync-badge { background: #dcfce7; color: #166534; padding: 5px 12px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+
+    /* PANEL CRUD KHUSUS ADMIN */
+    .admin-crud-panel {
+      background: #eef2ff; border: 1.5px solid #6366f1; border-radius: 14px;
+      padding: 14px 16px; margin-bottom: 18px; display: none; flex-wrap: wrap;
+      gap: 10px; align-items: center; justify-content: space-between;
+    }
+    .admin-crud-panel.active { display: flex; }
+    .admin-crud-title { font-weight: 800; font-size: 0.86rem; color: #3730a3; display: flex; align-items: center; gap: 8px; }
+    .admin-crud-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn-admin-action {
+      background: #ffffff; border: 1px solid #cbd5e1; color: #0f172a; padding: 8px 12px;
+      border-radius: 9px; font-size: 0.78rem; font-weight: 700; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s;
+    }
+    .btn-admin-action:hover { background: #f8fafc; }
+    .btn-admin-action:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-admin-primary { background: #4f46e5; border-color: #4338ca; color: #ffffff; }
+    .btn-admin-primary:hover { background: #4338ca; }
+    .btn-admin-danger { background: #fee2e2; border-color: #fecaca; color: #dc2626; }
+    .btn-admin-danger:hover { background: #fecaca; }
+
+    /* CONTROL PANEL */
+    .control-panel {
+      background: #ffffff; border: 1px solid #cbd5e1; border-radius: 14px;
+      padding: 14px 16px; margin-bottom: 20px; display: grid;
+      grid-template-columns: 1.5fr 1fr auto; gap: 12px; align-items: end;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+    }
+    .control-group { display: flex; flex-direction: column; gap: 6px; }
+    .control-label {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.4px; color: #475569; display: flex; align-items: center; gap: 5px;
+    }
+    .form-select, .form-input {
+      width: 100%; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 10px;
+      font-size: clamp(0.8rem, 1.5vw, 0.88rem); font-weight: 600; color: #0f172a;
+      background-color: #f8fafc; outline: none; transition: border-color 0.2s, background-color 0.2s;
+    }
+    .form-select:focus, .form-input:focus { border-color: #4f46e5; background-color: #ffffff; }
+
+    .btn-gsheets {
+      background: #0f9d58; color: #ffffff; border: none; padding: 10px 18px; height: 41px;
+      border-radius: 10px; font-weight: 700; font-size: clamp(0.78rem, 1.5vw, 0.86rem);
+      cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+      gap: 8px; transition: background 0.2s, transform 0.1s; white-space: nowrap;
+    }
+    .btn-gsheets:hover { background: #0b8043; }
+    .btn-gsheets:active { transform: scale(0.98); }
+    .btn-gsheets:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    /* TABEL SESI */
+    .event-section-wrapper { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 16px; padding: clamp(14px, 2.5vw, 20px); margin-bottom: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+    .event-info-card { background: #18191c; color: #ffffff; border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .event-title { font-size: clamp(0.98rem, 2vw, 1.15rem); font-weight: 800; margin-top: 2px; line-height: 1.3; }
+    .event-meta { font-size: clamp(0.72rem, 1.4vw, 0.8rem); color: #94a3b8; margin-top: 3px; }
+    .live-dot { width: 8px; height: 8px; background-color: #22c55e; border-radius: 50%; display: inline-block; margin-right: 5px; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+    .excel-container { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 10px; max-height: 68vh; -webkit-overflow-scrolling: touch; }
+    .excel-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: clamp(0.75rem, 1.4vw, 0.84rem); text-align: left; white-space: nowrap; }
+    .excel-table th { background-color: #f8fafc; color: #475569; padding: 10px 12px; border-bottom: 2px solid #cbd5e1; border-right: 1px solid #e2e8f0; font-weight: 800; text-transform: uppercase; font-size: clamp(0.68rem, 1.2vw, 0.75rem); position: sticky; top: 0; z-index: 10; }
+    .excel-table td { padding: 9px 12px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #f1f5f9; color: #334155; background-color: #ffffff; }
+    .excel-table tbody tr:hover td { background-color: #f1f5f9; }
+
+    .sticky-col-no { position: sticky; left: 0; z-index: 5; background-color: #f8fafc !important; min-width: 44px; }
+    .sticky-col-name { position: sticky; left: 44px; z-index: 5; border-right: 2px solid #cbd5e1 !important; }
+    .excel-table th.sticky-col-no, .excel-table th.sticky-col-name { z-index: 15; }
+
+    .badge-x { background: #fef3c7; color: #b45309; padding: 2px 6px; border-radius: 5px; font-weight: 800; font-size: 0.72rem; }
+    .arrow-detail { color: #64748b; font-size: 0.74rem; }
+    .end-sum { font-weight: 800; color: #4f46e5; margin-left: 3px; }
+    .row-crud-btn { background: #f1f5f9; border: 1px solid #cbd5e1; color: #0f172a; padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; }
+    .row-crud-btn:hover { background: #e2e8f0; }
+    .row-crud-btn.del { background: #fee2e2; border-color: #fecaca; color: #dc2626; }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 300; }
+    .modal-overlay.active { display: flex; }
+    .modal-box { background: #ffffff; border-radius: 16px; max-width: 540px; width: 100%; padding: 20px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25); max-height: 90vh; overflow-y: auto; }
+    .modal-title { font-size: 1.05rem; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .modal-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+    .modal-field label { font-size: 0.78rem; font-weight: 700; color: #475569; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 14px; }
+    .btn-modal-close { background: #e2e8f0; color: #334155; border: none; padding: 9px 14px; border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer; }
+    .btn-modal-copy { background: #4f46e5; color: #ffffff; border: none; padding: 9px 14px; border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-modal-open { background: #0f9d58; color: #ffffff; text-decoration: none; padding: 9px 14px; border-radius: 10px; font-weight: 700; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+
+    @media (max-width: 900px) {
+      .desktop-navbar { padding: 12px 16px; }
+      .nav-links-desktop { display: none !important; }
+      .btn-login-redirect { padding: 6px 10px; font-size: 0.75rem; }
+    }
+
+    @media (max-width: 820px) {
+      .control-panel { grid-template-columns: 1fr; }
+      .btn-gsheets { width: 100%; }
+      .admin-crud-panel { flex-direction: column; align-items: stretch; }
+      .header-right-actions { width: 100%; justify-content: space-between; margin-top: 6px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <header class="desktop-navbar">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <!-- Tombol hamburger: hanya muncul jika role === 'admin' -->
+      <button type="button" class="btn-hamburger-mobile" id="hamburger-btn" onclick="toggleMobileSidebar()" title="Menu Admin">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div class="brand">
+        <div class="brand-icon">🎯</div>
+        <span>SCORING<span style="color:#6366f1;">PTU</span></span>
+      </div>
+    </div>
+
+    <!-- Link navigasi desktop: hanya muncul jika role === 'admin' -->
+    <nav class="nav-links-desktop" id="desktop-nav-links">
+      <a href="home.html"><i class="fa-solid fa-sliders"></i> Setup Latihan</a>
+      <a href="scoring.html"><i class="fa-solid fa-bullseye"></i> Papan Skor</a>
+      <a href="riwayat.html"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat Sesi</a>
+      <a href="pendaftaran.html"><i class="fa-solid fa-users"></i> Registrasi</a>
+      <a href="index.html" class="active"><i class="fa-solid fa-table"></i> Public Score</a>
+    </nav>
+
+    <div class="header-right-actions">
+      <span class="admin-badge" id="admin-account-badge">
+        <i class="fa-solid fa-shield-halved"></i> <span id="admin-name-label">Admin</span>
+      </span>
+
+      <!-- Tombol keluar akun admin agar tampilan kembali ke mode Umum -->
+      <button type="button" class="btn-logout-admin" id="btn-logout-admin" onclick="logoutAdminAccount()">
+        <i class="fa-solid fa-right-from-bracket"></i> Keluar Akun
+      </button>
+
+      <a href="home.html" class="btn-login-redirect" id="top-login-btn">
+        <i class="fa-solid fa-arrow-right-to-bracket"></i> <span id="login-btn-text">Masuk Setup</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- SIDEBAR MOBILE: hanya aktif & tampil jika role === 'admin' -->
+  <div class="mobile-sidebar-overlay" id="mobile-overlay" onclick="toggleMobileSidebar()"></div>
+  <aside class="mobile-sidebar" id="mobile-sidebar">
+    <div>
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div class="brand" style="color:#fff;">
+          <div class="brand-icon" style="background:#fff; color:#18191c;">🎯</div>
+          <span>SCORING<span style="color:#818cf8;">PTU</span></span>
+        </div>
+        <button type="button" onclick="toggleMobileSidebar()" style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <nav class="mobile-nav-menu">
+        <a href="home.html"><i class="fa-solid fa-sliders"></i> Setup Latihan</a>
+        <a href="scoring.html"><i class="fa-solid fa-bullseye"></i> Papan Skor</a>
+        <a href="riwayat.html"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat Sesi</a>
+        <a href="pendaftaran.html"><i class="fa-solid fa-users"></i> Registrasi Peserta</a>
+        <a href="index.html" class="active"><i class="fa-solid fa-table"></i> Public Score</a>
+      </nav>
+    </div>
+
+    <div style="font-size: 0.75rem; color: #94a3b8; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px;">
+      <p>Copyright &copy; 2026 &bull; Bela</p>
+    </div>
+  </aside>
+
+  <main>
+    <div class="page-header">
+      <div>
+        <h1>Live Rekap Skor Pertandingan (Umum)</h1>
+        <p>Riwayat & skor pertandingan dari semua perangkat tersinkronisasi otomatis ke Firebase — bebas diakses tanpa login.</p>
+      </div>
+      <span class="sync-badge" id="firebase-status-badge">
+        <i class="fa-solid fa-cloud-bolt"></i> Terhubung Firebase
+      </span>
+    </div>
+
+    <!-- PANEL CRUD KHUSUS ADMIN -->
+    <div id="admin-crud-panel" class="admin-crud-panel">
+      <div class="admin-crud-title">
+        <i class="fa-solid fa-screwdriver-wrench"></i> Panel Admin — Kelola Data Sesi & Peserta (CRUD)
+      </div>
+      <div class="admin-crud-btns">
+        <button type="button" class="btn-admin-action btn-admin-primary" onclick="openCrudModal('create')">
+          <i class="fa-solid fa-plus"></i> Tambah Sesi Baru
+        </button>
+        <button type="button" class="btn-admin-action" id="btn-edit-session" onclick="openCrudModal('edit')">
+          <i class="fa-solid fa-pen-to-square"></i> Edit Sesi Terpilih
+        </button>
+        <button type="button" class="btn-admin-action btn-admin-danger" id="btn-delete-session" onclick="adminDeleteCurrentSession()">
+          <i class="fa-solid fa-trash-can"></i> Hapus Sesi Terpilih
+        </button>
+      </div>
+    </div>
+
+    <!-- FILTER & EXPORT GOOGLE SHEETS -->
+    <div class="control-panel">
+      <div class="control-group">
+        <label for="session-selector" class="control-label">
+          <i class="fa-solid fa-trophy" style="color:#4f46e5;"></i> Pilih Sesi Pertandingan
+        </label>
+        <select id="session-selector" class="form-select" onchange="handleSessionChange()">
+          <option value="">Memuat daftar sesi dari Firebase...</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label for="search-archer" class="control-label">
+          <i class="fa-solid fa-magnifying-glass" style="color:#64748b;"></i> Cari Nama / Klub
+        </label>
+        <input type="text" id="search-archer" class="form-input" placeholder="Ketik nama pemanah atau klub..." oninput="renderSelectedSession(true)">
+      </div>
+
+      <button id="btn-export" class="btn-gsheets" onclick="exportDirectToGoogleSheets()" disabled>
+        <i class="fa-solid fa-file-excel"></i> Export ke Google Sheets
+      </button>
+    </div>
+
+    <div id="all-events-container">
+      <div style="text-align: center; color: #64748b; padding: 40px 20px; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0;">
+        <i class="fa-solid fa-spinner fa-spin" style="font-size: 1.8rem; color: #4f46e5; margin-bottom: 10px;"></i>
+        <p style="font-weight: 700;">Memuat data sesi dari Firebase...</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL CRUD ADMIN -->
+  <div id="admin-crud-modal" class="modal-overlay" onclick="if(event.target===this) closeCrudModal()">
+    <div class="modal-box">
+      <div class="modal-title" id="crud-modal-title">
+        <i class="fa-solid fa-pen-to-square" style="color: #4f46e5;"></i> Kelola Data Sesi
+      </div>
+      <div class="modal-field">
+        <label>Nama Acara / Turnamen *</label>
+        <input type="text" id="crud-event-name" class="form-input" placeholder="Contoh: Kejuaraan Panahan Sumedang">
+      </div>
+      <div class="modal-field">
+        <label>Lokasi Lapangan</label>
+        <input type="text" id="crud-event-location" class="form-input" placeholder="Contoh: Lapangan Panahan Sumedang">
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+        <div class="modal-field">
+          <label>Kategori Busur</label>
+          <input type="text" id="crud-event-busur" class="form-input" placeholder="Recurve Bow">
+        </div>
+        <div class="modal-field">
+          <label>Jarak</label>
+          <input type="text" id="crud-event-jarak" class="form-input" placeholder="18 m">
+        </div>
+        <div class="modal-field">
+          <label>Jumlah End</label>
+          <input type="number" id="crud-event-ends" class="form-input" min="1" max="20" value="3">
+        </div>
+      </div>
+      <div class="modal-field">
+        <label>Peserta & Skor per End (Format: Nama - Klub | 10,9,X ; 8,9,9 — pisahkan baris baru)</label>
+        <textarea id="crud-participants-text" class="form-input" rows="5" placeholder="Ahmad - Klub A | 10,9,X ; 8,9,9&#10;Budi - Klub B | 9,9,8 ; 10,7,9"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-modal-close" onclick="closeCrudModal()">Batal</button>
+        <button type="button" class="btn-modal-copy" onclick="saveCrudSession()">
+          <i class="fa-solid fa-floppy-disk"></i> Simpan ke Firebase
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL KONFIRMASI EXPORT GOOGLE SHEETS -->
+  <div id="gsheets-modal" class="modal-overlay" onclick="if(event.target===this) closeExportModal()">
+    <div class="modal-box">
+      <div class="modal-title">
+        <i class="fa-solid fa-circle-check" style="color: #0f9d58; font-size: 1.3rem;"></i>
+        File Kolom Rapi (.CSV) Berhasil Diunduh!
+      </div>
+      <p style="font-size: 0.82rem; color: #475569; line-height: 1.5; margin-bottom: 12px;">
+        Setiap data sudah dipisah per kolom dengan format <code>sep=;</code> agar langsung rapi di <strong>Google Sheets</strong>:
+      </p>
+      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 12px 14px; font-size: 0.8rem; color: #166534; line-height: 1.55;">
+        <ol style="padding-left: 18px;">
+          <li>Klik tombol <strong>Buka Google Sheets</strong> di bawah.</li>
+          <li>Di Google Sheets, klik <strong>File → Import → Upload</strong> lalu pilih file <code>.csv</code> yang baru diunduh.</li>
+          <li>Pilih <strong>Replace spreadsheet</strong> / <strong>Insert new sheet</strong> — seluruh kolom langsung terbagi rapi dari kolom A ke kanan.</li>
+        </ol>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-modal-close" onclick="closeExportModal()">Tutup</button>
+        <a href="https://docs.google.com/spreadsheets/u/0/create" target="_blank" rel="noopener noreferrer" class="btn-modal-open">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka Google Sheets
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <footer style="background: #222; color: white; text-align: center; padding: 20px; margin-top: 50px;">
+    <p>Copyright &copy; 2026 &bull; Mela Aulia Syarifah</p>
+  </footer>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import {
+      getFirestore, collection, doc, setDoc, updateDoc, deleteDoc,
+      onSnapshot, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBO7QmIO80laPQUqKj80C-QZ74ZHPK6WJA",
+      authDomain: "scoringptu.firebaseapp.com",
+      projectId: "scoringptu",
+      storageBucket: "scoringptu.firebasestorage.app",
+      messagingSenderId: "790472578115",
+      appId: "1:790472578115:web:0f4d1395bc484686c9f0f6",
+      measurementId: "G-Z6TL4KDNJJ"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let historySessions = [];
+    let activeSessions = [];
+    let allParsedSessions = [];
+    let selectedSessionKey = localStorage.getItem('publicSelectedSessionKey') || '';
+    let lastRenderedHash = '';
+    let crudMode = 'create';
+
+    function isAdminAccountActive() {
+      try {
+        const user = JSON.parse(localStorage.getItem('activeArcheryUser') || 'null');
+        return Boolean(user && String(user.role || '').toLowerCase() === 'admin');
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function applyAdminAccessUI() {
+      const isAdmin = isAdminAccountActive();
+      const user = JSON.parse(localStorage.getItem('activeArcheryUser') || 'null');
+
+      const desktopNav = document.getElementById('desktop-nav-links');
+      const hamburgerBtn = document.getElementById('hamburger-btn');
+      const sidebarEl = document.getElementById('mobile-sidebar');
+      const overlayEl = document.getElementById('mobile-overlay');
+      const crudPanel = document.getElementById('admin-crud-panel');
+      const badgeEl = document.getElementById('admin-account-badge');
+      const badgeNameEl = document.getElementById('admin-name-label');
+      const logoutBtn = document.getElementById('btn-logout-admin');
+      const loginBtn = document.getElementById('top-login-btn');
+      const loginBtnText = document.getElementById('login-btn-text');
+
+      if (desktopNav) desktopNav.classList.toggle('admin-only-visible', isAdmin);
+      if (hamburgerBtn) hamburgerBtn.classList.toggle('admin-only-visible', isAdmin);
+      if (crudPanel) crudPanel.classList.toggle('active', isAdmin);
+      if (badgeEl) badgeEl.classList.toggle('active', isAdmin);
+      if (logoutBtn) logoutBtn.classList.toggle('active', isAdmin);
+
+      if (isAdmin && user) {
+        if (badgeNameEl) badgeNameEl.innerText = user.name || 'Admin';
+        if (loginBtnText) loginBtnText.innerText = 'Buka Setup';
+      } else {
+        if (sidebarEl) sidebarEl.classList.remove('active', 'admin-only-visible');
+        if (overlayEl) overlayEl.classList.remove('active', 'admin-only-visible');
+        if (loginBtnText) loginBtnText.innerText = 'Login';
+      }
+
+      if (loginBtn) {
+        loginBtn.href = isAdmin ? 'home.html' : 'login.html';
+      }
+
+      renderSelectedSession(true);
+    }
+
+    function logoutAdminAccount() {
+      if (!confirm('Keluar dari akun admin dan kembali ke tampilan Umum?')) return;
+      localStorage.removeItem('activeArcheryUser');
+      applyAdminAccessUI();
+    }
+
+    function getScoreValue(code) {
+      if (code === 'X') return 10;
+      if (code === 'X_WBN') return 6;
+      if (code === 'M' || code === null || code === undefined) return 0;
+      return parseInt(code, 10) || 0;
+    }
+
+    function formatScoreCode(code) {
+      if (code === 'X') return 'X(10)';
+      if (code === 'X_WBN') return 'X(6)';
+      return String(code);
+    }
+
+    function normalizeParticipants(rawParticipants) {
+      if (!Array.isArray(rawParticipants)) return [];
+      return rawParticipants.map(p => ({
+        ...p,
+        scores: (p.scores || []).map(endItem => Array.isArray(endItem) ? endItem : (endItem.arrows || []))
+      }));
+    }
+
+    function rebuildCombinedSessions() {
+      const combined = [];
+      const seen = new Set();
+
+      const pushSession = (uniqueKey, sourceCollection, docId, rawData) => {
+        if (!rawData || typeof rawData !== 'object') return;
+        const normalizedData = {
+          ...rawData,
+          participants: normalizeParticipants(rawData.participants)
+        };
+        const sig = `${(normalizedData.eventName || '').trim().toLowerCase()}|${(normalizedData.busur || '').trim().toLowerCase()}|${(normalizedData.jarak || '').trim().toLowerCase()}|${(normalizedData.date || '').trim().toLowerCase()}|${JSON.stringify(normalizedData.participants)}`;
+        if (seen.has(sig)) return;
+        seen.add(sig);
+
+        const count = normalizedData.participants.length;
+        const title = normalizedData.eventName || 'Sesi Pertandingan';
+        combined.push({
+          uniqueKey,
+          sourceCollection,
+          docId,
+          label: `${title} • ${normalizedData.busur || 'Standard'} (${normalizedData.jarak || '-'}) [${count} Peserta]`,
+          data: normalizedData
+        });
+      };
+
+      historySessions.forEach(item => {
+        pushSession(`history_${item.id}`, 'history', item.id, item.data);
+      });
+
+      activeSessions.forEach(item => {
+        if (item.data && item.data.status === 'active') {
+          pushSession(`sessions_${item.id}`, 'sessions', item.id, item.data);
+        }
+      });
+
+      allParsedSessions = combined;
+      updateDropdownOptions(allParsedSessions);
+      renderSelectedSession(false);
+    }
+
+    function subscribeFirestoreSessions() {
+      const badge = document.getElementById('firebase-status-badge');
+
+      onSnapshot(collection(db, 'history'), (snap) => {
+        historySessions = snap.docs.map(d => ({ id: d.id, data: d.data() }));
+        historySessions.sort((a, b) => {
+          const tA = a.data.createdAt?.seconds ? a.data.createdAt.seconds * 1000 : (a.data.createdAt || 0);
+          const tB = b.data.createdAt?.seconds ? b.data.createdAt.seconds * 1000 : (b.data.createdAt || 0);
+          return tB - tA;
+        });
+        if (badge) badge.innerHTML = `<i class="fa-solid fa-cloud-bolt"></i> Live Firebase (${allParsedSessions.length} Sesi)`;
+        rebuildCombinedSessions();
+      }, (err) => {
+        console.error('Error snapshot history:', err);
+        if (badge) badge.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Mode Offline/Error`;
+      });
+
+      onSnapshot(collection(db, 'sessions'), (snap) => {
+        activeSessions = snap.docs.map(d => ({ id: d.id, data: d.data() }));
+        rebuildCombinedSessions();
+      }, (err) => {
+        console.error('Error snapshot sessions:', err);
+      });
+    }
+
+    function updateDropdownOptions(sessions) {
+      const selector = document.getElementById('session-selector');
+      const btnExport = document.getElementById('btn-export');
+      const btnEdit = document.getElementById('btn-edit-session');
+      const btnDelete = document.getElementById('btn-delete-session');
+
+      if (!sessions || sessions.length === 0) {
+        selector.innerHTML = `<option value="">-- Belum ada sesi tersedia di Firebase --</option>`;
+        btnExport.disabled = true;
+        if (btnEdit) btnEdit.disabled = true;
+        if (btnDelete) btnDelete.disabled = true;
+        selectedSessionKey = '';
+        return;
+      }
+
+      btnExport.disabled = false;
+      if (btnEdit) btnEdit.disabled = false;
+      if (btnDelete) btnDelete.disabled = false;
+
+      const newSig = sessions.map(s => `${s.uniqueKey}:${s.label}`).join('|');
+      if (selector.dataset.signature !== newSig) {
+        let html = '';
+        if (sessions.length > 1) {
+          html += `<option value="ALL">📋 Tampilkan Semua Sesi (${sessions.length} Sesi)</option>`;
+        }
+        sessions.forEach(s => {
+          html += `<option value="${s.uniqueKey}">${s.label}</option>`;
+        });
+        selector.innerHTML = html;
+        selector.dataset.signature = newSig;
+      }
+
+      const exists = sessions.some(s => s.uniqueKey === selectedSessionKey) || (selectedSessionKey === 'ALL' && sessions.length > 1);
+      if (!exists) {
+        selectedSessionKey = sessions[0].uniqueKey;
+        localStorage.setItem('publicSelectedSessionKey', selectedSessionKey);
+      }
+      selector.value = selectedSessionKey;
+    }
+
+    function handleSessionChange() {
+      selectedSessionKey = document.getElementById('session-selector').value;
+      localStorage.setItem('publicSelectedSessionKey', selectedSessionKey);
+      renderSelectedSession(true);
+    }
+
+    function calculateSessionRanking(config) {
+      const totalEnd = parseInt(config.totalEnd, 10) || 5;
+      const participants = Array.isArray(config.participants) ? config.participants : [];
+
+      const list = participants.map((p, originalIdx) => {
+        let totalScore = 0;
+        let totalX = 0;
+        const endScoresSummary = [];
+
+        for (let i = 0; i < totalEnd; i++) {
+          const endArr = (p.scores && Array.isArray(p.scores[i])) ? p.scores[i] : [];
+          let endSum = 0;
+          const formattedArrows = endArr.map(code => {
+            const val = getScoreValue(code);
+            totalScore += val;
+            endSum += val;
+            if (code === 'X' || code === 'X_WBN') totalX += 1;
+            return formatScoreCode(code);
+          });
+          endScoresSummary.push({ arr: formattedArrows, sum: endSum });
+        }
+
+        return { ...p, originalIdx, totalScore, totalX, endScoresSummary };
+      });
+
+      list.sort((a, b) => (b.totalScore !== a.totalScore ? b.totalScore - a.totalScore : b.totalX - a.totalX));
+      return list.map((item, idx) => ({ ...item, rank: idx + 1 }));
+    }
+
+    function renderSelectedSession(forceRender = false) {
+      const container = document.getElementById('all-events-container');
+      if (!container) return;
+
+      const isAdmin = isAdminAccountActive();
+      const searchKeyword = (document.getElementById('search-archer')?.value || '').trim().toLowerCase();
+
+      if (!allParsedSessions || allParsedSessions.length === 0) {
+        const emptyHTML = `
+          <div style="text-align: center; color: #64748b; padding: 40px 20px; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0;">
+            <i class="fa-solid fa-folder-open" style="font-size: 2.2rem; margin-bottom: 10px; color: #cbd5e1;"></i>
+            <p style="font-weight: 700; color: #334155;">Belum ada data sesi pertandingan di Firebase.</p>
+            <p style="font-size: 0.8rem; margin-top: 4px;">Skor dari perangkat manapun akan otomatis muncul di sini.</p>
+          </div>
+        `;
+        if (forceRender || emptyHTML !== lastRenderedHash) {
+          container.innerHTML = emptyHTML;
+          lastRenderedHash = emptyHTML;
+        }
+        return;
+      }
+
+      const sessionsToRender = selectedSessionKey === 'ALL'
+        ? allParsedSessions
+        : allParsedSessions.filter(s => s.uniqueKey === selectedSessionKey);
+
+      let masterHTML = '';
+
+      sessionsToRender.forEach((item, index) => {
+        const config = item.data;
+        const eventName = config.eventName || `Sesi Pertandingan ${index + 1}`;
+        const eventMeta = `${config.busur || 'Standard'} • ${config.jarak || '-'} • ${config.totalEnd || 5} End (${config.arrowCount || 3} Arrow/End)${config.date ? ` • ${config.date}` : ''}`;
+        const eventLocation = config.location || 'Lapangan Utama';
+        const totalEnd = parseInt(config.totalEnd, 10) || 5;
+
+        let headHTML = `
+          <tr>
+            <th class="sticky-col-no" style="width: 44px; text-align:center;">Rank</th>
+            <th class="sticky-col-name">Nama Pemanah</th>
+            <th>Klub / Instansi</th>
+        `;
+        for (let i = 1; i <= totalEnd; i++) {
+          headHTML += `<th style="text-align:center;">End ${i}</th>`;
+        }
+        headHTML += `
+            <th style="text-align:center; background:#fef3c7; color:#b45309;">X Count</th>
+            <th style="text-align:center; background:#dcfce7; color:#166534; font-size: 0.85rem;">TOTAL SKOR</th>
+        `;
+        if (isAdmin) {
+          headHTML += `<th style="text-align:center; background:#eef2ff; color:#3730a3;">Aksi Admin</th>`;
+        }
+        headHTML += `</tr>`;
+
+        let rankedList = calculateSessionRanking(config);
+        if (searchKeyword) {
+          rankedList = rankedList.filter(p =>
+            (p.name && p.name.toLowerCase().includes(searchKeyword)) ||
+            (p.club && p.club.toLowerCase().includes(searchKeyword))
+          );
+        }
+
+        let bodyHTML = '';
+        if (rankedList.length === 0) {
+          bodyHTML = `<tr><td colspan="${totalEnd + (isAdmin ? 6 : 5)}" style="text-align:center; padding: 24px; color:#64748b;">Tidak ada peserta yang cocok.</td></tr>`;
+        } else {
+          rankedList.forEach(p => {
+            let rankDisplay = p.rank;
+            if (p.rank === 1) rankDisplay = '<i class="fa-solid fa-medal" style="color:#fbbf24; font-size:1.1rem;"></i>';
+            else if (p.rank === 2) rankDisplay = '<i class="fa-solid fa-medal" style="color:#94a3b8; font-size:1.1rem;"></i>';
+            else if (p.rank === 3) rankDisplay = '<i class="fa-solid fa-medal" style="color:#d97706; font-size:1.1rem;"></i>';
+
+            bodyHTML += `
+              <tr>
+                <td class="sticky-col-no" style="text-align:center; font-weight:800; font-size: 1rem;">${rankDisplay}</td>
+                <td class="sticky-col-name"><strong style="color:#0f172a;">${p.name}</strong></td>
+                <td><span style="color:#64748b;">${p.club || '-'}</span></td>
+            `;
+
+            p.endScoresSummary.forEach(end => {
+              const strArrows = end.arr.length > 0 ? `<span class="arrow-detail">${end.arr.join(' | ')}</span>` : '<span class="arrow-detail">-</span>';
+              bodyHTML += `<td style="text-align:center;">${strArrows} <span class="end-sum">(${end.sum})</span></td>`;
+            });
+
+            bodyHTML += `
+                <td style="text-align:center; font-weight:800;"><span class="badge-x">${p.totalX}X</span></td>
+                <td style="text-align:center; font-weight:900; font-size: 1.05rem; color:#166534; background:#f0fdf4;">${p.totalScore}</td>
+            `;
+
+            if (isAdmin) {
+              bodyHTML += `
+                <td style="text-align:center;">
+                  <button type="button" class="row-crud-btn del" onclick="adminDeleteParticipant('${item.uniqueKey}', ${p.originalIdx})">
+                    <i class="fa-solid fa-trash"></i> Hapus
+                  </button>
+                </td>
+              `;
+            }
+
+            bodyHTML += `</tr>`;
+          });
+        }
+
+        masterHTML += `
+          <div class="event-section-wrapper">
+            <div class="event-info-card">
+              <div>
+                <span style="font-size: 0.68rem; font-weight: 800; color: #22c55e; letter-spacing:0.5px;">
+                  <span class="live-dot"></span> LIVE REKAP PUBLIK
+                </span>
+                <h2 class="event-title">${eventName}</h2>
+                <p class="event-meta">${eventMeta}</p>
+              </div>
+              <div style="text-align: left;">
+                <span style="font-size: 0.65rem; color: #94a3b8; text-transform: uppercase;">Lokasi</span>
+                <div style="font-weight: 700; font-size: 0.82rem;">${eventLocation}</div>
+              </div>
+            </div>
+            <div class="excel-container">
+              <table class="excel-table">
+                <thead>${headHTML}</thead>
+                <tbody>${bodyHTML}</tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      });
+
+      if (!forceRender && masterHTML === lastRenderedHash) return;
+      container.innerHTML = masterHTML;
+      lastRenderedHash = masterHTML;
+    }
+
+    // --- CRUD ADMIN KE FIRESTORE ---
+    function openCrudModal(mode) {
+      if (!isAdminAccountActive()) return alert('Akses khusus akun Admin.');
+      crudMode = mode;
+      const modal = document.getElementById('admin-crud-modal');
+      const title = document.getElementById('crud-modal-title');
+
+      if (mode === 'create') {
+        title.innerHTML = '<i class="fa-solid fa-plus" style="color: #4f46e5;"></i> Tambah Sesi Baru ke Firebase';
+        document.getElementById('crud-event-name').value = 'Turnamen Panahan Sumedang';
+        document.getElementById('crud-event-location').value = 'Lapangan Panahan Sumedang';
+        document.getElementById('crud-event-busur').value = 'Recurve Bow';
+        document.getElementById('crud-event-jarak').value = '18 m';
+        document.getElementById('crud-event-ends').value = '3';
+        document.getElementById('crud-participants-text').value = 'Ahmad - Klub A | 10,9,X ; 8,9,9 ; 10,8,9\nBudi - Klub B | 9,9,8 ; 10,7,9 ; 8,8,9';
+      } else {
+        if (!selectedSessionKey || selectedSessionKey === 'ALL') {
+          alert('Pilih satu sesi spesifik pada dropdown terlebih dahulu untuk diedit.');
+          return;
+        }
+        const found = allParsedSessions.find(s => s.uniqueKey === selectedSessionKey);
+        if (!found) return alert('Data sesi tidak ditemukan.');
+
+        title.innerHTML = '<i class="fa-solid fa-pen-to-square" style="color: #4f46e5;"></i> Edit Sesi Terpilih';
+        document.getElementById('crud-event-name').value = found.data.eventName || '';
+        document.getElementById('crud-event-location').value = found.data.location || '';
+        document.getElementById('crud-event-busur').value = found.data.busur || 'Recurve Bow';
+        document.getElementById('crud-event-jarak').value = found.data.jarak || '18 m';
+        document.getElementById('crud-event-ends').value = found.data.totalEnd || 3;
+
+        const lines = (found.data.participants || []).map(p => {
+          const endsStr = (p.scores || []).map(endArr => (Array.isArray(endArr) ? endArr : (endArr.arrows || [])).join(',')).join(' ; ');
+          return `${p.name} - ${p.club || 'Independen'}${endsStr ? ` | ${endsStr}` : ''}`;
+        });
+        document.getElementById('crud-participants-text').value = lines.join('\n');
+      }
+
+      modal.classList.add('active');
+    }
+
+    function closeCrudModal() {
+      document.getElementById('admin-crud-modal').classList.remove('active');
+    }
+
+    function parseParticipantsInput(rawText) {
+      return rawText
+        .split('\n')
+        .map(l => l.trim())
+        .filter(Boolean)
+        .map((line, idx) => {
+          const [identityPart, scoresPart] = line.split('|');
+          const [nameRaw, clubRaw] = (identityPart || '').split('-');
+          const name = (nameRaw || `Peserta ${idx + 1}`).trim();
+          const club = (clubRaw || 'Independen').trim();
+
+          const scores = (scoresPart || '')
+            .split(';')
+            .map(s => s.trim())
+            .filter(Boolean)
+            .map(endStr =>
+              endStr.split(',').map(token => {
+                const t = token.trim().toUpperCase();
+                if (t === 'X(10)' || t === 'X') return 'X';
+                if (t === 'X(6)' || t === 'X_WBN') return 'X_WBN';
+                if (t === 'M') return 'M';
+                return t;
+              })
+            );
+
+          return {
+            name,
+            club,
+            bantalan: `Bantalan ${idx + 1}`,
+            sesi: 'Sesi 1',
+            scores
+          };
+        });
+    }
+
+    async function saveCrudSession() {
+      if (!isAdminAccountActive()) return alert('Akses khusus akun Admin.');
+      const eventName = document.getElementById('crud-event-name').value.trim();
+      if (!eventName) return alert('Nama acara wajib diisi!');
+
+      const location = document.getElementById('crud-event-location').value.trim() || 'Lapangan Utama';
+      const busur = document.getElementById('crud-event-busur').value.trim() || 'Recurve Bow';
+      const jarak = document.getElementById('crud-event-jarak').value.trim() || '18 m';
+      const totalEnd = parseInt(document.getElementById('crud-event-ends').value, 10) || 3;
+      const participants = parseParticipantsInput(document.getElementById('crud-participants-text').value);
+
+      try {
+        if (crudMode === 'create') {
+          const newDocRef = doc(collection(db, 'history'));
+          const nowStr = new Date().toLocaleDateString('id-ID', {
+            day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+          });
+          await setDoc(newDocRef, {
+            eventName,
+            location,
+            busur,
+            jarak,
+            arrowCount: 3,
+            totalEnd,
+            date: nowStr,
+            participants,
+            createdAt: serverTimestamp()
+          });
+          selectedSessionKey = `history_${newDocRef.id}`;
+          localStorage.setItem('publicSelectedSessionKey', selectedSessionKey);
+        } else {
+          const found = allParsedSessions.find(s => s.uniqueKey === selectedSessionKey);
+          if (!found) return alert('Sesi tidak ditemukan.');
+          await updateDoc(doc(db, found.sourceCollection, found.docId), {
+            eventName,
+            location,
+            busur,
+            jarak,
+            totalEnd,
+            participants,
+            updatedAt: serverTimestamp()
+          });
+        }
+        closeCrudModal();
+      } catch (err) {
+        console.error('Gagal menyimpan ke Firebase:', err);
+        alert('Gagal menyimpan data ke Firebase: ' + err.message);
+      }
+    }
+
+    async function adminDeleteCurrentSession() {
+      if (!isAdminAccountActive()) return alert('Akses khusus akun Admin.');
+      if (!selectedSessionKey || selectedSessionKey === 'ALL') {
+        alert('Pilih satu sesi spesifik pada dropdown terlebih dahulu untuk dihapus.');
+        return;
+      }
+      const found = allParsedSessions.find(s => s.uniqueKey === selectedSessionKey);
+      if (!found) return alert('Data sesi tidak ditemukan.');
+
+      if (!confirm(`Hapus permanen sesi "${found.data.eventName || 'Sesi'}" dari Firebase?`)) return;
+
+      try {
+        await deleteDoc(doc(db, found.sourceCollection, found.docId));
+        selectedSessionKey = '';
+        localStorage.removeItem('publicSelectedSessionKey');
+      } catch (err) {
+        console.error('Gagal menghapus sesi:', err);
+        alert('Gagal menghapus sesi: ' + err.message);
+      }
+    }
+
+    async function adminDeleteParticipant(uniqueKey, participantIdx) {
+      if (!isAdminAccountActive()) return alert('Akses khusus akun Admin.');
+      const found = allParsedSessions.find(s => s.uniqueKey === uniqueKey);
+      if (!found || !Array.isArray(found.data.participants)) return;
+
+      const targetArcher = found.data.participants[participantIdx];
+      if (!targetArcher) return;
+      if (!confirm(`Hapus peserta "${targetArcher.name}" dari sesi ini?`)) return;
+
+      const updatedParticipants = found.data.participants.filter((_, idx) => idx !== participantIdx);
+      try {
+        await updateDoc(doc(db, found.sourceCollection, found.docId), {
+          participants: updatedParticipants,
+          updatedAt: serverTimestamp()
+        });
+      } catch (err) {
+        console.error('Gagal menghapus peserta:', err);
+        alert('Gagal menghapus peserta: ' + err.message);
+      }
+    }
+
+    // --- EXPORT KOLOM RAPI KE GOOGLE SHEETS ---
+    function escapeSemiCSV(val) {
+      const str = String(val ?? '');
+      if (str.includes('"') || str.includes(';') || str.includes('\n') || str.includes('\r')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    }
+
+    function exportDirectToGoogleSheets() {
+      if (!allParsedSessions || allParsedSessions.length === 0) return;
+
+      const sessionsToExport = selectedSessionKey === 'ALL'
+        ? allParsedSessions
+        : allParsedSessions.filter(s => s.uniqueKey === selectedSessionKey);
+
+      if (sessionsToExport.length === 0) return;
+
+      const maxEnds = Math.max(
+        1,
+        ...sessionsToExport.map(s => parseInt(s.data.totalEnd, 10) || 5)
+      );
+
+      const headers = ['Nama Acara', 'Kategori', 'Jarak', 'Lokasi', 'Peringkat', 'Nama Pemanah', 'Klub / Instansi'];
+      for (let i = 1; i <= maxEnds; i++) {
+        headers.push(`End ${i} Skor`);
+        headers.push(`End ${i} Rincian`);
+      }
+      headers.push('X Count', 'TOTAL SKOR');
+
+      const rows = [headers];
+
+      sessionsToExport.forEach((item, idx) => {
+        const config = item.data;
+        const rankedList = calculateSessionRanking(config);
+
+        rankedList.forEach(p => {
+          const r = [
+            config.eventName || `Sesi ${idx + 1}`,
+            config.busur || '-',
+            config.jarak || '-',
+            config.location || '-',
+            p.rank,
+            p.name,
+            p.club || '-'
+          ];
+
+          for (let i = 0; i < maxEnds; i++) {
+            const endSummary = p.endScoresSummary[i];
+            if (endSummary) {
+              r.push(endSummary.sum);
+              r.push(endSummary.arr.length > 0 ? endSummary.arr.join(', ') : '-');
+            } else {
+              r.push('');
+              r.push('');
+            }
+          }
+
+          r.push(p.totalX, p.totalScore);
+          rows.push(r);
+        });
+      });
+
+      const csvContent = '\uFEFFsep=;\r\n' + rows.map(r => r.map(escapeSemiCSV).join(';')).join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+
+      const safeName = (sessionsToExport[0].data.eventName || 'Rekap_Skor_Panahan')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_|_$/g, '');
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${safeName || 'rekap_skor'}_kolom_rapi.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+      document.getElementById('gsheets-modal').classList.add('active');
+    }
+
+    function closeExportModal() {
+      document.getElementById('gsheets-modal').classList.remove('active');
+    }
+
+    function toggleMobileSidebar() {
+      if (!isAdminAccountActive()) return;
+      document.getElementById('mobile-sidebar').classList.toggle('active');
+      document.getElementById('mobile-overlay').classList.toggle('active');
+      document.getElementById('mobile-sidebar').classList.add('admin-only-visible');
+      document.getElementById('mobile-overlay').classList.add('admin-only-visible');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      applyAdminAccessUI();
+      subscribeFirestoreSessions();
+    });
+
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'activeArcheryUser') {
+        applyAdminAccessUI();
+      }
+    });
+
+    window.logoutAdminAccount = logoutAdminAccount;
+    window.handleSessionChange = handleSessionChange;
+    window.renderSelectedSession = renderSelectedSession;
+    window.openCrudModal = openCrudModal;
+    window.closeCrudModal = closeCrudModal;
+    window.saveCrudSession = saveCrudSession;
+    window.adminDeleteCurrentSession = adminDeleteCurrentSession;
+    window.adminDeleteParticipant = adminDeleteParticipant;
+    window.exportDirectToGoogleSheets = exportDirectToGoogleSheets;
+    window.closeExportModal = closeExportModal;
+    window.toggleMobileSidebar = toggleMobileSidebar;
+  </script>
+</body>
+</html>

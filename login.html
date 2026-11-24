@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login & Verifikasi Akun Resmi - SCORINGPTU</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background-color: #f3f5f9; color: #1e293b; min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
+    .main-wrapper { width: 100%; display: flex; justify-content: center; align-items: center; flex: 1; }
+    .login-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 24px; padding: 32px; width: 100%; max-width: 440px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); }
+    .brand { display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 800; font-size: 1.4rem; color: #0f172a; margin-bottom: 20px; }
+    .brand-icon { background-color: #18191c; color: #ffffff; padding: 6px 12px; border-radius: 12px; font-size: 1.1rem; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .form-group label { font-size: 0.8rem; font-weight: 700; color: #64748b; }
+    .form-control { background-color: #f8fafc; border: 1px solid #e2e8f0; color: #0f172a; padding: 12px 16px; border-radius: 12px; font-size: 0.9rem; outline: none; font-weight: 600; transition: border 0.2s; }
+    .form-control:focus { border-color: #6366f1; background-color: #ffffff; }
+    .btn-submit { width: 100%; background-color: #18191c; color: #ffffff; font-weight: 800; font-size: 0.95rem; padding: 14px; border-radius: 12px; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(24, 25, 28, 0.15); transition: background 0.2s; margin-top: 10px; }
+    .btn-submit:hover { background-color: #0f172a; }
+    .btn-back-home { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background-color: #f1f5f9; color: #64748b; font-weight: 700; font-size: 0.9rem; padding: 12px; border-radius: 12px; text-decoration: none; transition: background 0.2s, color 0.2s; margin-top: 10px; }
+    .btn-back-home:hover { background-color: #e2e8f0; color: #0f172a; }
+    .info-box { background: #e0e7ff; color: #3730a3; padding: 12px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; line-height: 1.4; margin-bottom: 20px; }
+    .invoice-card { text-align: center; }
+    .invoice-icon { font-size: 2.5rem; margin-bottom: 8px; color: #f59e0b; }
+    .bank-box { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 14px; padding: 12px; margin: 12px 0; text-align: left; font-size: 0.8rem; }
+    .bank-item { display: flex; justify-content: space-between; margin-bottom: 4px; font-weight: 700; color: #0f172a; }
+    .qr-container { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 12px; margin: 12px 0; display: flex; flex-direction: column; align-items: center; }
+    .qr-container img { width: 140px; height: 140px; border-radius: 8px; border: 4px solid #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .btn-wa { display: flex; align-items: center; justify-content: center; gap: 8px; background-color: #25d366; color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 800; width: 100%; cursor: pointer; text-decoration: none; font-size: 0.9rem; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.25); margin-top: 8px; }
+    .btn-back { background: #f1f5f9; color: #64748b; border: none; padding: 10px; border-radius: 10px; font-weight: 700; width: 100%; cursor: pointer; margin-top: 6px; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+
+  <div class="main-wrapper">
+    <div class="login-card" id="card-container">
+      <div class="brand">
+        <div class="brand-icon">🎯</div>
+        <span>SCORING<span style="color:#6366f1;">PTU</span></span>
+      </div>
+
+      <!-- FORM LOGIN UTAMA -->
+      <div id="view-login">
+        <div class="info-box">
+          <i class="fa-solid fa-circle-info"></i> Masuk dengan email resmi yang sudah didaftarkan/diaktifkan oleh Admin (sesi login disimpan per tab).
+        </div>
+
+        <form onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label>Nama Lengkap / PIC Event *</label>
+            <input type="text" id="login-name" class="form-control" placeholder="Contoh: Bima" required>
+          </div>
+
+          <div class="form-group">
+            <label>Email Akun Resmi *</label>
+            <input type="email" id="login-email" class="form-control" placeholder="Contoh: bima@gmail.com" required>
+          </div>
+
+          <div class="form-group">
+            <label>Klub / Instansi *</label>
+            <input type="text" id="login-club" class="form-control" placeholder="Contoh: Sumedang Club" required>
+          </div>
+
+          <button type="submit" class="btn-submit">
+            Masuk ke Aplikasi <i class="fa-solid fa-arrow-right"></i>
+          </button>
+
+          <a href="index.html" class="btn-back-home">
+            <i class="fa-solid fa-arrow-left"></i> Kembali ke Beranda
+          </a>
+        </form>
+      </div>
+
+      <!-- VIEW TAMPILAN JIKA AKUN BELUM TERDAFTAR / KEDALUWARSA -->
+      <div id="view-expired" class="invoice-card" style="display: none;">
+        <div class="invoice-icon" id="status-icon">⏳</div>
+        <h2 id="status-title" style="color: #0f172a; font-weight: 800; font-size: 1.2rem; margin-bottom: 4px;">Akses Belum Terdaftar / Habis</h2>
+        <p id="expired-desc" style="color: #64748b; font-size: 0.8rem; line-height: 1.4; margin-bottom: 10px;"></p>
+
+        <div class="bank-box">
+          <div style="font-size: 0.7rem; color: #64748b; margin-bottom: 6px; font-weight: 700; text-transform: uppercase;">💳 Pembayaran Sewa / Aktivasi:</div>
+          <div class="bank-item"><span>Bank BRI:</span> <span style="color:#4f46e5;">4440 0100 8483 501adminPhone</span></div>
+          <div class="bank-item"><span>DANA :</span> <span style="color:#0284c7;">0895 3244 20419</span></div>
+        </div>
+
+        <div class="qr-container">
+          <span style="font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 8px;"><i class="fa-solid fa-qrcode"></i> Scan QR untuk Minta Akses WA:</span>
+          <img id="qr-code-img" src="" alt="QR Code WhatsApp Admin">
+        </div>
+
+        <a id="wa-link" href="#" target="_blank" class="btn-wa">
+          <i class="fa-brands fa-whatsapp" style="font-size: 1.1rem;"></i> Hubungi Admin untuk Aktivasi
+        </a>
+        <button type="button" class="btn-back" onclick="backToLogin()">← Kembali ke Menu Login</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer style="background: #222; color: white; text-align: center; padding: 15px; width: 100%; border-radius: 8px; margin-top: 20px;">
+    <p style="font-size: 0.85rem;">Copyright &copy; 2026 &bull; Mela Aulia Syarifah</p>
+  </footer>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, query, where, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBO7QmIO80laPQUqKj80C-QZ74ZHPK6WJA",
+      authDomain: "scoringptu.firebaseapp.com",
+      projectId: "scoringptu",
+      storageBucket: "scoringptu.firebasestorage.app",
+      messagingSenderId: "790472578115",
+      appId: "1:790472578115:web:0f4d1395bc484686c9f0f6",
+      measurementId: "G-Z6TL4KDNJJ"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    function setTabSessionUser(userObj) {
+      sessionStorage.setItem('activeArcheryUser', JSON.stringify(userObj));
+    }
+
+    function setTabAdminViewMode(mode) {
+      sessionStorage.setItem('adminViewMode', mode);
+    }
+
+    window.handleLogin = async function(e) {
+      e.preventDefault();
+
+      const name = document.getElementById('login-name').value.trim();
+      const email = document.getElementById('login-email').value.trim().toLowerCase();
+      const club = document.getElementById('login-club').value.trim();
+
+      const isAdminEmail = (email === "mimin@gmail.com");
+
+      const adminPhone = "62895324420419";
+      const waText = `Halo Admin, saya ingin konfirmasi sewa website SCORINGPTU untuk akun:%0A- Nama: ${name}%0A- Email: ${email}%0A- Klub: ${club}%0A%0ABerikut bukti pembayarannya.`;
+      const finalWaUrl = `https://api.whatsapp.com/send?phone=${adminPhone}&text=${waText}`;
+      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(finalWaUrl)}`;
+
+      try {
+        const q = query(collection(db, "users"), where("email", "==", email));
+        const querySnapshot = await getDocs(q);
+
+        let userData = null;
+
+        if (querySnapshot.empty) {
+          const newUser = {
+            name: name,
+            email: email,
+            club: club,
+            role: isAdminEmail ? "admin" : "klien",
+            status: isAdminEmail ? "active" : "pending",
+            hasEverActivated: isAdminEmail ? true : false,
+            expiryTime: isAdminEmail ? 9999999999999 : 0
+          };
+
+          await addDoc(collection(db, "users"), newUser);
+          userData = newUser;
+        } else {
+          userData = querySnapshot.docs[0].data();
+        }
+
+        // 1. ADMIN UTAMA
+        if (isAdminEmail) {
+          const activeUser = { name, email, club, role: 'admin' };
+          setTabSessionUser(activeUser);
+          setTabAdminViewMode('admin');
+          alert("🔓 Login Berhasil! Anda masuk sebagai Admin Utama di tab ini.");
+          window.location.href = 'home.html';
+          return;
+        }
+
+        // 2. CEK STATUS & MASA SEWA KLIEN
+        const currentTime = Date.now();
+        const expiryTime = Number(userData.expiryTime || 0);
+        const status = String(userData.status || '').toLowerCase();
+        const isActive = (status === 'active' && expiryTime > currentTime);
+
+        if (!isActive) {
+          const everActivated = Boolean(userData.hasEverActivated) || status === 'expired' || expiryTime > 0;
+
+          document.getElementById('view-login').style.display = 'none';
+          document.getElementById('view-expired').style.display = 'block';
+
+          if (everActivated) {
+            const expiredDateStr = expiryTime > 0
+              ? new Date(expiryTime).toLocaleDateString('id-ID', { dateStyle: 'full' })
+              : 'sebelumnya';
+            document.getElementById('status-icon').innerText = '❌';
+            document.getElementById('status-title').innerText = 'Masa Sewa Telah Kedaluwarsa';
+            document.getElementById('expired-desc').innerHTML = `
+              Akun <strong>${name}</strong> (<em>${email}</em>) sebelumnya sudah pernah aktif, namun masa aktifnya berakhir pada <strong>${expiredDateStr}</strong>. Silakan lakukan pembayaran perpanjangan dan hubungi Admin.
+            `;
+          } else {
+            document.getElementById('status-icon').innerText = '⏳';
+            document.getElementById('status-title').innerText = 'Belum Aktif • Menunggu Konfirmasi Bayar';
+            document.getElementById('expired-desc').innerHTML = `
+              Halo <strong>${name}</strong>, akun <strong>${email}</strong> belum aktif atau masih menunggu konfirmasi pembayaran oleh Admin. Silakan bayar lalu kirim bukti konfirmasi ke Admin.
+            `;
+          }
+
+          document.getElementById('wa-link').href = finalWaUrl;
+          document.getElementById('qr-code-img').src = qrApiUrl;
+          return;
+        }
+
+        // 3. KLIEN AKTIF
+        const activeUser = {
+          name: userData.name || name,
+          email: userData.email || email,
+          club: userData.club || club,
+          role: 'klien'
+        };
+        setTabSessionUser(activeUser);
+        setTabAdminViewMode('client');
+        alert(`✨ Selamat datang, ${activeUser.name}! Login berhasil di tab ini.`);
+        window.location.href = 'home.html';
+
+      } catch (error) {
+        console.error("Error login:", error);
+        alert('Terjadi kesalahan koneksi: ' + error.message);
+      }
+    };
+
+    window.backToLogin = function() {
+      document.getElementById('view-expired').style.display = 'none';
+      document.getElementById('view-login').style.display = 'block';
+    };
+  </script>
+</body>
+</html>

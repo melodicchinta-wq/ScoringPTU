@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registrasi Peserta Panahan - SCORINGPTU</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    .role-selector-wrapper { position: relative; display: inline-block; }
+    .role-select { background-color: #18191c; color: #ffffff; border: 1px solid #e2e8f0; padding: 8px 14px; border-radius: 12px; font-size: 0.85rem; font-weight: 700; cursor: pointer; outline: none; transition: all 0.2s ease; }
+    .role-select:hover { background-color: #0f172a; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; }
+    body { background-color: #f3f5f9; color: #1e293b; min-height: 100vh; display: flex; flex-direction: column; }
+    .desktop-navbar { background-color: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 14px 8%; position: sticky; top: 0; z-index: 90; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02); }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.2rem; color: #0f172a; }
+    .brand-icon { background-color: #18191c; color: #ffffff; padding: 6px 10px; border-radius: 12px; font-size: 1rem; }
+    .nav-links-desktop { display: flex; gap: 12px; align-items: center; }
+    .nav-links-desktop a { color: #64748b; text-decoration: none; font-size: 0.9rem; font-weight: 600; padding: 8px 16px; border-radius: 12px; transition: all 0.2s ease; display: flex; align-items: center; gap: 8px; }
+    .nav-links-desktop a:hover, .nav-links-desktop a.active { background-color: #18191c; color: #ffffff; }
+    .user-profile-header { display: flex; align-items: center; gap: 10px; background: #f8fafc; padding: 6px 14px; border-radius: 30px; border: 1px solid #e2e8f0; }
+    .user-avatar { width: 30px; height: 30px; background: #e0e7ff; color: #4f46e5; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; }
+    .btn-hamburger-mobile { display: none; background: none; border: none; font-size: 1.4rem; color: #0f172a; cursor: pointer; }
+    .mobile-sidebar-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px); z-index: 200; display: none; }
+    .mobile-sidebar-overlay.active { display: block; }
+    .mobile-sidebar { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background-color: #18191c; color: #ffffff; z-index: 210; transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; justify-content: space-between; padding: 24px 20px; box-shadow: 10px 0 30px rgba(0, 0, 0, 0.2); }
+    .mobile-sidebar.active { left: 0; }
+    .mobile-nav-menu { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
+    .mobile-nav-menu a { color: #94a3b8; text-decoration: none; padding: 12px 16px; border-radius: 12px; font-weight: 600; display: flex; align-items: center; gap: 12px; }
+    .mobile-nav-menu a.active, .mobile-nav-menu a:hover { background-color: rgba(255, 255, 255, 0.15); color: #ffffff; }
+    main { max-width: 950px; width: 100%; margin: 0 auto; padding: 24px 20px 60px 20px; flex: 1; }
+    .page-title p { font-size: 0.75rem; font-weight: 800; color: #6366f1; text-transform: uppercase; letter-spacing: 1px; }
+    .page-title h1 { font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-bottom: 16px; }
+    .dashboard-card { background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 24px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02); }
+    .card-title { font-size: 1.05rem; font-weight: 800; color: #0f172a; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+    @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+    .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .form-group label { font-size: 0.8rem; font-weight: 700; color: #64748b; }
+    .form-control { background-color: #f8fafc; border: 1px solid #e2e8f0; color: #0f172a; padding: 12px 16px; border-radius: 12px; font-size: 0.9rem; outline: none; font-weight: 600; transition: border 0.2s; }
+    .form-control:focus { border-color: #6366f1; background-color: #ffffff; }
+    .btn-submit { width: 100%; background-color: #18191c; color: #ffffff; font-weight: 800; font-size: 0.95rem; padding: 14px; border-radius: 12px; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(24, 25, 28, 0.15); transition: all 0.2s; }
+    .btn-submit:hover { background-color: #0f172a; }
+    .btn-import { background-color: #10b981; color: #ffffff; font-weight: 700; font-size: 0.85rem; padding: 8px 14px; border-radius: 10px; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .btn-import:hover { background-color: #059669; }
+    .btn-cancel { background-color: #f1f5f9; color: #475569; font-weight: 700; padding: 14px; border-radius: 12px; border: 1px solid #cbd5e1; cursor: pointer; width: 100%; }
+    .table-responsive { overflow-x: auto; margin-top: 12px; }
+    .db-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; }
+    .db-table th { background-color: #f8fafc; color: #64748b; padding: 10px 12px; border-bottom: 2px solid #e2e8f0; font-size: 0.75rem; text-transform: uppercase; white-space: nowrap; font-weight: 800; }
+    .db-table td { padding: 12px; border-bottom: 1px solid #f1f5f9; color: #334155; white-space: nowrap; }
+    .btn-action-group { display: flex; gap: 6px; }
+    .btn-edit-sm { background: #e0e7ff; border: 1px solid #c7d2fe; color: #3730a3; padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 0.75rem; font-weight: 700; }
+    .btn-danger-sm { background: #fee2e2; border: 1px solid #fecaca; color: #ef4444; padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 0.75rem; font-weight: 700; }
+    .badge-kategori { background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; }
+    .badge-active-rental { background: #dcfce7; color: #166534; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; }
+    @media (max-width: 900px) { .nav-links-desktop { display: none; } .btn-hamburger-mobile { display: block; } .desktop-navbar { padding: 12px 20px; } main { padding: 16px; } }
+  </style>
+</head>
+
+<body>
+
+  <!-- DESKTOP NAVBAR -->
+  <header class="desktop-navbar">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <button type="button" class="btn-hamburger-mobile" onclick="toggleMobileSidebar()"><i class="fa-solid fa-bars"></i></button>
+      <div class="brand"><div class="brand-icon">🎯</div><span>SCORING<span style="color:#6366f1;">PTU</span></span></div>
+    </div>
+    <nav class="nav-links-desktop">
+      <a href="home.html"><i class="fa-solid fa-sliders"></i> Setup Latihan</a>
+      <a href="scoring.html"><i class="fa-solid fa-bullseye"></i> Papan Skor</a>
+      <a href="riwayat.html"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat Sesi</a>
+      <a href="pendaftaran.html" class="active"><i class="fa-solid fa-users"></i> Registrasi</a>
+      <a href="index.html" id="nav-public-score-desktop" style="display: none;"><i class="fa-solid fa-table"></i> Public Score</a>
+      <div class="role-selector-wrapper">
+        <select id="app-role-picker-desktop" class="role-select" onchange="switchRole(this.value)">
+          <option value="scorer">📱 Scorer (HP)</option>
+          <option value="display">🖥️ Live Display</option>
+          <option value="admin" selected>⚙️ Admin / Panitia</option>
+        </select>
+      </div>
+    </nav>
+    <div class="user-profile-header">
+      <div class="user-avatar" id="header-avatar">A</div>
+      <span style="font-size: 0.85rem; font-weight: 700; color: #0f172a;" id="header-username">SCORINGPTU</span>
+    </div>
+  </header>
+
+  <!-- MOBILE SIDEBAR -->
+  <div class="mobile-sidebar-overlay" id="mobile-overlay" onclick="toggleMobileSidebar()"></div>
+  <aside class="mobile-sidebar" id="mobile-sidebar">
+    <div>
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div class="brand" style="color:#fff;"><div class="brand-icon" style="background:#fff; color:#18191c;">🎯</div><span>SCORING<span style="color:#818cf8;">PTU</span></span></div>
+        <button type="button" onclick="toggleMobileSidebar()" style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <nav class="mobile-nav-menu">
+        <a href="home.html"><i class="fa-solid fa-sliders"></i> Setup Latihan</a>
+        <a href="scoring.html"><i class="fa-solid fa-bullseye"></i> Papan Skor</a>
+        <a href="riwayat.html"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat Sesi</a>
+        <a href="pendaftaran.html" class="active"><i class="fa-solid fa-users"></i> Registrasi Peserta</a>
+        <a href="index.html" id="nav-public-score-mobile" style="display: none;"><i class="fa-solid fa-table"></i> Public Score</a>
+        <div class="role-selector-wrapper" style="margin-top: 10px;">
+          <select id="app-role-picker-mobile" class="role-select" style="width: 100%;" onchange="switchRole(this.value)">
+            <option value="scorer">📱 Scorer (HP)</option>
+            <option value="display">🖥️ Live Display</option>
+            <option value="admin" selected>⚙️ Admin / Panitia</option>
+          </select>
+        </div>
+      </nav>
+    </div>
+    <div class="mobile-footer-text" style="font-size: 0.75rem; color: #94a3b8; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px;">
+      <p>Copyright &copy; 2026 &bull; Mela Aulia Syarifah</p>
+    </div>
+  </aside>
+
+  <main>
+    <div class="page-title">
+      <p>Database Event & Pemanah</p>
+      <h1>Registrasi & Kelola Peserta (CRUD)</h1>
+    </div>
+
+    <!-- PANEL KONTROL MASA SEWA KLIEN -->
+    <div class="dashboard-card" id="rental-panel-card" style="border-color: #fde047; background: #fffbeb; display: none;">
+      <div class="card-title" style="color: #92400e;">
+        <span><i class="fa-solid fa-clock"></i> Panel Kontrol Masa Sewa Klien (Admin)</span>
+        <span class="badge-active-rental" id="total-clients-badge">Total Akun Klien: 0</span>
+      </div>
+      <div class="form-group">
+        <label style="color: #92400e;">Pilih Akun Klien dari Dropdown atau Ketik Manual:</label>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <select id="client-dropdown" class="form-control" style="flex: 1; min-width: 200px;" onchange="document.getElementById('target-client-email').value = this.value; checkSelectedClientStatus();">
+            <option value="">-- Pilih dari daftar akun klien --</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top: 8px;">
+        <label style="color: #92400e;">Email Klien / Penyewa:</label>
+        <input type="email" id="target-client-email" class="form-control" placeholder="Contoh: bima@gmail.com" oninput="checkSelectedClientStatus()">
+      </div>
+      <div class="grid-2" style="align-items: end; margin-top: 10px;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label style="color: #92400e;">Set / Perpanjang Durasi (Jumlah Hari):</label>
+          <input type="number" id="rental-days-input" class="form-control" min="1" value="2">
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn-submit" style="background-color: #d97706;" onclick="adminSetClientDuration()"><i class="fa-solid fa-check-circle"></i> Update Sewa Klien</button>
+          <button type="button" class="btn-danger-sm" style="padding: 14px;" onclick="adminLockClient()" title="Kunci Akses Klien"><i class="fa-solid fa-lock"></i> Kunci Klien</button>
+        </div>
+      </div>
+      <p id="target-client-info" style="font-size: 0.75rem; color: #b45309; margin-top: 10px; font-weight: 600;"></p>
+    </div>
+
+    <!-- KARTU IMPORT EXCEL / CSV -->
+    <div class="dashboard-card" style="border-color: #a7f3d0; background: #ecfdf5;">
+      <div class="card-title" style="color: #065f46;">
+        <span><i class="fa-solid fa-file-excel"></i> Import Massal dari File Excel / CSV</span>
+        <button type="button" class="btn-import" onclick="document.getElementById('excel-file-input').click()"><i class="fa-solid fa-folder-open"></i> Pilih File Excel / CSV</button>
+      </div>
+      <input type="file" id="excel-file-input" accept="*/*" style="display: none;" onchange="handleExcelUpload(event)">
+      <p style="font-size: 0.8rem; color: #047857; line-height: 1.5; font-weight: 500;">
+        * Upload file Excel/CSV dengan urutan kolom: <strong>No. Registrasi | Nama Lengkap | No. HP/WA | Tgl Lahir | Jenis Kelamin | Alamat Domisili | Kab/Kota | Provinsi | Klub Panahan | Kategori Busur</strong>.
+      </p>
+    </div>
+
+    <!-- FORM INPUT & EDIT PENDAFTARAN MANUAL -->
+    <div class="dashboard-card" id="form-card">
+      <div class="card-title" id="form-title">📝 Form Pendaftaran Peserta Baru</div>
+      <form id="reg-form" onsubmit="saveRegistration(event)">
+        <input type="hidden" id="edit-id" value="">
+        <div class="grid-2">
+          <div class="form-group"><label>Nama Lengkap Peserta *</label><input type="text" id="reg-nama" class="form-control" placeholder="Contoh: Ahmad Dahlan" required></div>
+          <div class="form-group"><label>No. Registrasi / ID Peserta *</label><input type="text" id="reg-no" class="form-control" placeholder="Contoh: ARC-2026-001" required></div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group"><label>No. HP / WhatsApp *</label><input type="text" id="reg-hp" class="form-control" placeholder="Contoh: 081234567890" required></div>
+          <div class="form-group"><label>Tanggal Lahir</label><input type="date" id="reg-tgl" class="form-control"></div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group"><label>Jenis Kelamin</label><select id="reg-jk" class="form-control"><option value="Laki-laki">Laki-laki</option><option value="Perempuan">Perempuan</option></select></div>
+          <div class="form-group"><label>Kategori / Jenis Busur *</label><select id="reg-kategori" class="form-control"><option value="Traditional Bow">Traditional Bow</option><option value="Kasumedangan">Kasumedangan</option><option value="Recurve Bow">Recurve Bow</option><option value="Compound Bow">Compound Bow</option><option value="Barebow">Barebow</option></select></div>
+        </div>
+        <div class="form-group"><label>Alamat Domisili</label><input type="text" id="reg-alamat" class="form-control" placeholder="Contoh: Jl. Angkasa No. 12"></div>
+        <div class="grid-3">
+          <div class="form-group"><label>Kabupaten / Kota</label><input type="text" id="reg-kab" class="form-control" placeholder="Kab. Sumedang"></div>
+          <div class="form-group"><label>Provinsi</label><input type="text" id="reg-prov" class="form-control" placeholder="Jawa Barat"></div>
+          <div class="form-group"><label>Klub Panahan *</label><input type="text" id="reg-klub" class="form-control" placeholder="Sumedang Archery Club" required></div>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 10px;" id="btn-container">
+          <button type="submit" class="btn-submit" id="btn-save-text">+ Simpan Registrasi Peserta</button>
+          <button type="button" class="btn-cancel" id="btn-cancel-edit" style="display: none;" onclick="cancelEdit()">Batal Edit</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- TABEL DATABASE PESERTA TERDAFTAR -->
+    <div class="dashboard-card">
+      <div class="card-title">
+        <span>👥 Database Peserta Terdaftar</span>
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <select id="filter-kategori" class="form-control" style="font-size:0.8rem; padding:6px 12px;" onchange="renderDatabase()">
+            <option value="ALL">Semua Kategori</option>
+            <option value="Traditional Bow">Traditional Bow</option>
+            <option value="Kasumedangan">Kasumedangan</option>
+            <option value="Recurve Bow">Recurve Bow</option>
+            <option value="Compound Bow">Compound Bow</option>
+            <option value="Barebow">Barebow</option>
+          </select>
+          <span id="db-count" style="font-size: 0.8rem; color: #64748b; font-weight:700;">0 Peserta</span>
+          <button type="button" onclick="clearDatabase()" class="btn-danger-sm"><i class="fa-solid fa-trash"></i> Reset DB</button>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="db-table">
+          <thead>
+            <tr><th>No</th><th>Waktu Reg</th><th>Didaftarkan Oleh</th><th>No. Reg</th><th>Nama Lengkap</th><th>No. HP / WA</th><th>Tgl Lahir</th><th>L/P</th><th>Alamat</th><th>Kab/Kota</th><th>Provinsi</th><th>Klub Panahan</th><th>Kategori</th><th>Aksi</th></tr>
+          </thead>
+          <tbody id="db-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <footer class="desktop-footer" style="background: #222; color: white; text-align: center; padding: 20px; margin-top: 50px;">
+    <p>Copyright &copy; 2026 &bull; Mela Aulia Syarifah</p>
+  </footer>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+const firebaseConfig = {
+      apiKey: "AIzaSyBO7QmIO80laPQUqKj80C-QZ74ZHPK6WJA",
+      authDomain: "scoringptu.firebaseapp.com",
+      projectId: "scoringptu",
+      storageBucket: "scoringptu.firebasestorage.app",
+      messagingSenderId: "790472578115",
+      appId: "1:790472578115:web:0f4d1395bc484686c9f0f6",
+      measurementId: "G-Z6TL4KDNJJ"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let clientCache = new Map();
+    let unsubscribeParticipants = null;
+
+    function getActiveUser() {
+      const rawTab = sessionStorage.getItem('activeArcheryUser');
+      if (rawTab) {
+        try {
+          return JSON.parse(rawTab);
+        } catch (e) {}
+      }
+      const rawLocal = localStorage.getItem('activeArcheryUser');
+      if (rawLocal) {
+        try {
+          const parsed = JSON.parse(rawLocal);
+          sessionStorage.setItem('activeArcheryUser', JSON.stringify(parsed));
+          return parsed;
+        } catch (e) {}
+      }
+      return { name: 'Admin Tamu', email: 'guest@archery.com', club: 'Independen' };
+    }
+
+    function getAccountEmail() {
+      return String(getActiveUser().email || 'guest@archery.com').trim().toLowerCase();
+    }
+
+    function syncAdminNavAccess() {
+      const user = getActiveUser();
+      const isAdmin = Boolean(
+        user &&
+        (String(user.role || '').toLowerCase() === 'admin' ||
+         String(user.email || '').trim().toLowerCase() === 'mimin@gmail.com')
+      );
+
+      const deskLink = document.getElementById('nav-public-score-desktop');
+      const mobLink = document.getElementById('nav-public-score-mobile');
+
+      if (deskLink) deskLink.style.display = isAdmin ? 'inline-flex' : 'none';
+      if (mobLink) mobLink.style.display = isAdmin ? 'flex' : 'none';
+    }
+
+    function toggleMobileSidebar() { document.getElementById('mobile-sidebar').classList.toggle('active'); document.getElementById('mobile-overlay').classList.toggle('active'); }
+    function switchRole(role) { if (role === 'admin') window.location.href = 'pendaftaran.html'; else if (role === 'display') window.location.href = 'display.html'; else if (role === 'scorer') window.location.href = 'scoring.html'; }
+
+    function classifyClientStatus(user) {
+      const now = Date.now();
+      const status = String(user.status || '').toLowerCase();
+      const expiryTime = Number(user.expiryTime || 0);
+      const everActivated = Boolean(user.hasEverActivated) || status === 'expired' || status === 'renew_pending';
+
+      if (status === 'active' && expiryTime > now) {
+        const sisaHari = Math.ceil((expiryTime - now) / (24 * 60 * 60 * 1000));
+        return {
+          code: 'active',
+          label: `✅ [Aktif] ${user.email}`,
+          detail: `✅ Status: AKTIF (sisa ±${sisaHari} hari, berlaku s/d ${new Date(expiryTime).toLocaleDateString('id-ID')}).`
+        };
+      }
+
+      if (everActivated || (expiryTime > 0 && now >= expiryTime)) {
+        const expText = expiryTime > 0 ? new Date(expiryTime).toLocaleDateString('id-ID') : 'sebelumnya';
+        return {
+          code: 'expired',
+          label: `❌ [Kedaluwarsa • Pernah Aktif] ${user.email}`,
+          detail: `❌ Status: KEDALUWARSA — akun sudah pernah aktif/beli (habis ${expText}). Klik "Update Sewa Klien" untuk perpanjang.`
+        };
+      }
+
+      return {
+        code: 'unconfirmed',
+        label: `⏳ [Belum Aktif • Menunggu Konfirmasi Bayar] ${user.email}`,
+        detail: `⏳ Status: BELUM AKTIF — member baru / belum terkonfirmasi bayar. Konfirmasi pembayaran lalu klik "Update Sewa Klien".`
+      };
+    }
+
+    async function checkIfAdmin() {
+      const activeUser = getActiveUser();
+      const adminEmail = "mimin@gmail.com";
+      const rentalPanel = document.getElementById('rental-panel-card');
+
+      if (rentalPanel && String(activeUser.email || '').trim().toLowerCase() === adminEmail) {
+        rentalPanel.style.display = 'block';
+        await loadClientDropdownList();
+      } else if (rentalPanel) {
+        rentalPanel.style.display = 'none';
+      }
+    }
+
+    async function loadClientDropdownList() {
+      const dropdown = document.getElementById('client-dropdown');
+      if (!dropdown) return;
+      dropdown.innerHTML = `<option value="">-- Memuat data klien... --</option>`;
+
+      try {
+        const q = query(collection(db, "users"), where("role", "==", "klien"));
+        const querySnapshot = await getDocs(q);
+
+        dropdown.innerHTML = `<option value="">-- Pilih dari daftar akun klien --</option>`;
+        clientCache.clear();
+        let count = 0;
+
+        querySnapshot.forEach((docSnap) => {
+          const user = docSnap.data();
+          const email = String(user.email || '').trim().toLowerCase();
+          if (!email) return;
+
+          const statusInfo = classifyClientStatus({ ...user, email });
+          clientCache.set(email, statusInfo);
+
+          const opt = document.createElement('option');
+          opt.value = email;
+          opt.innerText = statusInfo.label;
+          dropdown.appendChild(opt);
+          count++;
+        });
+
+        document.getElementById('total-clients-badge').innerText = `Total Akun Klien: ${count}`;
+        checkSelectedClientStatus();
+      } catch (error) {
+        console.error("Error loading clients:", error);
+        dropdown.innerHTML = `<option value="">-- Gagal memuat data --</option>`;
+      }
+    }
+
+    async function adminSetClientDuration() {
+      const email = document.getElementById('target-client-email').value.trim().toLowerCase();
+      const days = parseInt(document.getElementById('rental-days-input').value, 10);
+
+      if (!email || !days) return alert("Email dan durasi wajib diisi!");
+
+      try {
+        const q = query(collection(db, "users"), where("email", "==", email));
+        const snap = await getDocs(q);
+
+        if (snap.empty) return alert("Email klien tidak ditemukan di database Firebase.");
+
+        const newExpiry = new Date().getTime() + (days * 24 * 60 * 60 * 1000);
+        const userDocRef = doc(db, "users", snap.docs[0].id);
+
+        await updateDoc(userDocRef, {
+          status: "active",
+          hasEverActivated: true,
+          expiryTime: newExpiry
+        });
+
+        alert(`✅ Pembayaran dikonfirmasi & masa sewa untuk ${email} aktif selama ${days} hari.`);
+        await loadClientDropdownList();
+      } catch (error) {
+        alert("Gagal update sewa: " + error.message);
+      }
+    }
+
+    async function adminLockClient() {
+      const email = document.getElementById('target-client-email').value.trim().toLowerCase();
+      if (!email) return alert("Masukkan email klien!");
+
+      if (confirm(`Yakin ingin mengunci akses untuk ${email}?`)) {
+        try {
+          const q = query(collection(db, "users"), where("email", "==", email));
+          const snap = await getDocs(q);
+          if (snap.empty) return alert("Email klien tidak ditemukan.");
+
+          const existing = snap.docs[0].data();
+          const hadPriorActivation = Boolean(existing.hasEverActivated) || Number(existing.expiryTime || 0) > 0;
+          const userDocRef = doc(db, "users", snap.docs[0].id);
+
+          await updateDoc(userDocRef, {
+            status: hadPriorActivation ? "expired" : "pending",
+            expiryTime: 0
+          });
+
+          alert(`🔒 Akses untuk ${email} berhasil dikunci.`);
+          await loadClientDropdownList();
+        } catch (error) {
+          alert("Gagal mengunci: " + error.message);
+        }
+      }
+    }
+
+    async function checkSelectedClientStatus() {
+      const email = document.getElementById('target-client-email').value.trim().toLowerCase();
+      const infoBox = document.getElementById('target-client-info');
+      if (!infoBox) return;
+      if (!email) {
+        infoBox.innerText = "";
+        return;
+      }
+
+      if (clientCache.has(email)) {
+        infoBox.innerText = clientCache.get(email).detail;
+        return;
+      }
+
+      try {
+        const q = query(collection(db, "users"), where("email", "==", email));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const statusInfo = classifyClientStatus({ ...snap.docs[0].data(), email });
+          clientCache.set(email, statusInfo);
+          infoBox.innerText = statusInfo.detail;
+          return;
+        }
+      } catch (err) {
+        console.error("Error cek status klien:", err);
+      }
+
+      infoBox.innerText = `ℹ️ Klik "Update Sewa Klien" untuk mengatur status akun ${email}.`;
+    }
+
+    async function saveRegistration(e) {
+      e.preventDefault();
+      const activeUser = getActiveUser();
+      const ownerEmail = getAccountEmail();
+      const editId = document.getElementById('edit-id').value;
+
+      const dataPeserta = {
+        noReg: document.getElementById('reg-no').value.trim() || '-',
+        nama: document.getElementById('reg-nama').value.trim() || '-',
+        noHp: document.getElementById('reg-hp').value.trim() || '-',
+        tglLahir: document.getElementById('reg-tgl').value || '-',
+        jk: document.getElementById('reg-jk').value || 'Laki-laki',
+        alamat: document.getElementById('reg-alamat').value.trim() || '-',
+        kab: document.getElementById('reg-kab').value.trim() || '-',
+        prov: document.getElementById('reg-prov').value.trim() || '-',
+        klub: document.getElementById('reg-klub').value.trim() || '-',
+        kategori: document.getElementById('reg-kategori').value || 'Traditional Bow',
+        registeredBy: activeUser.name || 'Admin',
+        ownerEmail,
+        timestamp: serverTimestamp()
+      };
+
+      try {
+        if (editId) {
+          await updateDoc(doc(db, "participants", editId), dataPeserta);
+          alert('Data peserta berhasil diperbarui!');
+        } else {
+          await addDoc(collection(db, "participants"), dataPeserta);
+          alert('Berhasil mendaftarkan peserta baru!');
+        }
+        cancelEdit();
+      } catch (error) {
+        console.error("Error saving document: ", error);
+        alert('Gagal menyimpan data: ' + error.message);
+      }
+    }
+
+    function renderDatabase() {
+      const ownerEmail = getAccountEmail();
+      const filter = document.getElementById('filter-kategori').value;
+      const tbody = document.getElementById('db-table-body');
+
+      if (typeof unsubscribeParticipants === 'function') {
+        unsubscribeParticipants();
+        unsubscribeParticipants = null;
+      }
+
+      tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data untuk ${ownerEmail}...</td></tr>`;
+
+      const q = query(collection(db, "participants"), where("ownerEmail", "==", ownerEmail));
+
+      unsubscribeParticipants = onSnapshot(q, (querySnapshot) => {
+        let list = [];
+        querySnapshot.forEach((docSnap) => {
+          list.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        if (filter !== 'ALL') {
+          list = list.filter(item => item.kategori === filter);
+        }
+
+        list.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+        document.getElementById('db-count').innerText = `${list.length} Peserta`;
+
+        if (list.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; color:#64748b; padding:24px;">Belum ada data peserta untuk akun ini. Silakan isi form atau import.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = '';
+        list.forEach((item, index) => {
+          let timeStr = '-';
+          if (item.timestamp) {
+            timeStr = new Date(item.timestamp.seconds * 1000).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' });
+          }
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${index + 1}</td>
+            <td><span style="font-size:0.75rem; color:#64748b;">${timeStr}</span></td>
+            <td><span style="font-weight:700; color:#4f46e5;"><i class="fa-solid fa-user-shield"></i> ${item.registeredBy || 'Admin'}</span></td>
+            <td><strong style="color:#0f172a;">${item.noReg || '-'}</strong></td>
+            <td><strong style="color:#0f172a;">${item.nama || '-'}</strong></td>
+            <td><span style="color:#0284c7; font-weight:600;">${item.noHp || '-'}</span></td>
+            <td>${item.tglLahir || '-'}</td>
+            <td>${item.jk || '-'}</td>
+            <td>${item.alamat || '-'}</td>
+            <td>${item.kab || '-'}</td>
+            <td>${item.prov || '-'}</td>
+            <td>${item.klub || '-'}</td>
+            <td><span class="badge-kategori">${item.kategori || 'Traditional Bow'}</span></td>
+            <td>
+              <div class="btn-action-group">
+                <button type="button" class="btn-edit-sm" onclick="editPeserta('${item.id}')"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
+                <button type="button" class="btn-danger-sm" onclick="deletePeserta('${item.id}')"><i class="fa-solid fa-trash"></i> Hapus</button>
+              </div>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }, (error) => {
+        console.error("Error fetching data: ", error);
+        tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; color:red; padding:24px;">Gagal memuat data: ${error.message}</td></tr>`;
+      });
+    }
+
+    async function deletePeserta(id) {
+      if (confirm('Yakin ingin menghapus peserta ini?')) {
+        try {
+          await deleteDoc(doc(db, "participants", id));
+        } catch (error) {
+          alert('Gagal menghapus: ' + error.message);
+        }
+      }
+    }
+
+    async function clearDatabase() {
+      const ownerEmail = getAccountEmail();
+      if (confirm(`Apakah kamu yakin ingin MENGHAPUS SEMUA data peserta milik akun ${ownerEmail}?`)) {
+        const q = query(collection(db, "participants"), where("ownerEmail", "==", ownerEmail));
+        const querySnapshot = await getDocs(q);
+
+        for (const document of querySnapshot.docs) {
+          await deleteDoc(doc(db, "participants", document.id));
+        }
+        alert('Semua data peserta untuk akun ini berhasil dihapus.');
+      }
+    }
+
+    async function editPeserta(id) {
+      try {
+        const docSnap = await getDocs(query(collection(db, "participants"), where("__name__", "==", id)));
+
+        if (!docSnap.empty) {
+          const peserta = docSnap.docs[0].data();
+
+          document.getElementById('edit-id').value = id;
+          document.getElementById('reg-no').value = peserta.noReg || '';
+          document.getElementById('reg-nama').value = peserta.nama || '';
+          document.getElementById('reg-hp').value = peserta.noHp || '';
+          document.getElementById('reg-tgl').value = peserta.tglLahir !== '-' ? peserta.tglLahir : '';
+          document.getElementById('reg-jk').value = peserta.jk || 'Laki-laki';
+          document.getElementById('reg-alamat').value = peserta.alamat !== '-' ? peserta.alamat : '';
+          document.getElementById('reg-kab').value = peserta.kab !== '-' ? peserta.kab : '';
+          document.getElementById('reg-prov').value = peserta.prov !== '-' ? peserta.prov : '';
+          document.getElementById('reg-klub').value = peserta.klub || '';
+          document.getElementById('reg-kategori').value = peserta.kategori || 'Traditional Bow';
+
+          document.getElementById('form-title').innerText = '✏️ Edit Data Peserta';
+          document.getElementById('btn-save-text').innerText = '💾 Simpan Perubahan';
+          document.getElementById('btn-cancel-edit').style.display = 'block';
+          document.getElementById('form-card').scrollIntoView({ behavior: 'smooth' });
+        }
+      } catch (error) {
+        alert("Gagal mengambil data edit: " + error.message);
+      }
+    }
+
+    function cancelEdit() {
+      document.getElementById('edit-id').value = '';
+      document.getElementById('reg-form').reset();
+      document.getElementById('form-title').innerText = '📝 Form Pendaftaran Peserta Baru';
+      document.getElementById('btn-save-text').innerText = '+ Simpan Registrasi Peserta';
+      document.getElementById('btn-cancel-edit').style.display = 'none';
+    }
+
+    async function handleExcelUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const activeUser = getActiveUser();
+      const ownerEmail = getAccountEmail();
+      if (file.name.toLowerCase().endsWith('.pdf')) {
+        alert('⚠️ File PDF tidak didukung! Gunakan Excel/CSV.'); event.target.value = ''; return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async function (e) {
+        let dataRows = [];
+        try {
+          if (file.name.toLowerCase().endsWith('.csv')) {
+            let text = e.target.result;
+            if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+            const lines = text.split(/\r\n|\n/);
+            for (let i = 1; i < lines.length; i++) {
+              if (lines[i].trim()) dataRows.push(parseCSVLine(lines[i]));
+            }
+          } else {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+            for (let i = 1; i < jsonData.length; i++) {
+              if (jsonData[i] && jsonData[i].length > 0) dataRows.push(jsonData[i]);
+            }
+          }
+
+          if (dataRows.length === 0) { alert("File kosong atau format salah."); return; }
+
+          let countImported = 0;
+          const batch = writeBatch(db);
+          const participantsRef = collection(db, "participants");
+
+          dataRows.forEach((row) => {
+            if (row[1]) {
+              const newDocRef = doc(participantsRef);
+              batch.set(newDocRef, {
+                noReg: row[0] || `ARC-IMP-${Date.now()}`,
+                nama: row[1] || 'Peserta',
+                noHp: row[2] || '-',
+                tglLahir: row[3] || '-',
+                jk: row[4] || 'Laki-laki',
+                alamat: row[5] || '-',
+                kab: row[6] || '-',
+                prov: row[7] || '-',
+                klub: row[8] || 'Independen',
+                kategori: row[9] || 'Traditional Bow',
+                registeredBy: activeUser.name || 'Admin',
+                ownerEmail,
+                timestamp: serverTimestamp()
+              });
+              countImported++;
+            }
+          });
+
+          await batch.commit();
+          alert(`Berhasil mengimpor ${countImported} peserta untuk akun ${ownerEmail}!`);
+        } catch (err) {
+          console.error(err);
+          alert('Gagal membaca file: ' + err.message);
+        }
+      };
+
+      if (file.name.toLowerCase().endsWith('.csv')) reader.readAsText(file, 'UTF-8');
+      else reader.readAsArrayBuffer(file);
+
+      event.target.value = '';
+    }
+
+    function parseCSVLine(text) {
+      let result = [], current = '', inQuotes = false;
+      for (let i = 0; i < text.length; i++) {
+        let char = text[i];
+        if (char === '"') inQuotes = !inQuotes;
+        else if (char === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
+        else current += char;
+      }
+      result.push(current.trim());
+      return result.map(val => val.replace(/^["']|["']$/g, ''));
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      syncAdminNavAccess();
+      const activeUser = getActiveUser();
+      document.getElementById('header-username').innerText = activeUser.name || 'SCORINGPTU';
+      document.getElementById('header-avatar').innerText = (activeUser.name || 'A').charAt(0).toUpperCase();
+
+      checkIfAdmin();
+      renderDatabase();
+
+      window.toggleMobileSidebar = toggleMobileSidebar;
+      window.switchRole = switchRole;
+      window.adminSetClientDuration = adminSetClientDuration;
+      window.adminLockClient = adminLockClient;
+      window.saveRegistration = saveRegistration;
+      window.renderDatabase = renderDatabase;
+      window.deletePeserta = deletePeserta;
+      window.clearDatabase = clearDatabase;
+      window.editPeserta = editPeserta;
+      window.cancelEdit = cancelEdit;
+      window.checkSelectedClientStatus = checkSelectedClientStatus;
+      window.handleExcelUpload = handleExcelUpload;
+    });
+  </script>
+</body>
+
+</html>

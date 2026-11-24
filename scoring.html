@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Papan Skor & Leaderboard - SCORINGPTU</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    .keypad-notice-panel {
+  background: #ffffff;
+  border: 1px solid #c7d2fe;
+  border-left: 4px solid #6366f1;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 18px;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.06);
+}
+
+.keypad-notice-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #3730a3;
+  margin-bottom: 6px;
+}
+
+.keypad-notice-desc {
+  font-size: 0.82rem;
+  color: #475569;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.keypad-notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn-notice-primary {
+  background: #18191c;
+  color: #ffffff;
+  border: none;
+  padding: 9px 14px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-notice-primary:hover {
+  background: #0f172a;
+}
+
+.btn-notice-secondary {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-notice-secondary:hover {
+  background: #e2e8f0;
+}
+    .role-selector-wrapper { position: relative; display: inline-block; }
+    .role-select { background-color: #18191c; color: #ffffff; border: 1px solid #e2e8f0; padding: 8px 14px; border-radius: 12px; font-size: 0.85rem; font-weight: 700; cursor: pointer; outline: none; transition: all 0.2s ease; }
+    .role-select:hover { background-color: #0f172a; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; }
+    body { background-color: #f3f5f9; color: #1e293b; min-height: 100vh; display: flex; flex-direction: column; }
+    .desktop-navbar { background-color: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 14px 8%; position: sticky; top: 0; z-index: 90; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02); }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.2rem; color: #0f172a; }
+    .brand-icon { background-color: #18191c; color: #ffffff; padding: 6px 10px; border-radius: 12px; font-size: 1rem; }
+    .nav-links-desktop { display: flex; gap: 12px; align-items: center; }
+    .nav-links-desktop a { color: #64748b; text-decoration: none; font-size: 0.9rem; font-weight: 600; padding: 8px 16px; border-radius: 12px; transition: all 0.2s ease; display: flex; align-items: center; gap: 8px; }
+    .nav-links-desktop a:hover, .nav-links-desktop a.active { background-color: #18191c; color: #ffffff; }
+    .user-profile-header { display: flex; align-items: center; gap: 10px; background: #f8fafc; padding: 6px 14px; border-radius: 30px; border: 1px solid #e2e8f0; }
+    .user-avatar { width: 30px; height: 30px; background: #e0e7ff; color: #4f46e5; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; }
+    .btn-hamburger-mobile { display: none; background: none; border: none; font-size: 1.4rem; color: #0f172a; cursor: pointer; }
+    .mobile-sidebar-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px); z-index: 200; display: none; }
+    .mobile-sidebar-overlay.active { display: block; }
+    .mobile-sidebar { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background-color: #18191c; color: #ffffff; z-index: 210; transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; justify-content: space-between; padding: 24px 20px; box-shadow: 10px 0 30px rgba(0, 0, 0, 0.2); }
+    .mobile-sidebar.active { left: 0; }
+    .mobile-nav-menu { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
+    .mobile-nav-menu a { color: #94a3b8; text-decoration: none; padding: 12px 16px; border-radius: 12px; font-weight: 600; display: flex; align-items: center; gap: 12px; }
+    .mobile-nav-menu a.active, .mobile-nav-menu a:hover { background-color: rgba(255, 255, 255, 0.15); color: #ffffff; }
+    main { max-width: 900px; width: 100%; margin: 0 auto; padding: 24px 20px 60px 20px; flex: 1; }
+    .page-navigation { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+    .btn-change-setup { background: #ffffff; border: 1px solid #e2e8f0; color: #0f172a; padding: 8px 14px; border-radius: 12px; font-size: 0.8rem; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02); }
+    .dashboard-card { background: #ffffff; border-radius: 20px; padding: 20px 16px; margin-bottom: 20px; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02); overflow-x: hidden; }
+    .session-info { font-size: 0.75rem; font-weight: 800; color: #6366f1; text-transform: uppercase; letter-spacing: 0.5px; }
+    .archer-selector { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 16px; scrollbar-width: thin; }
+    .btn-archer-tab { background-color: #f8fafc; border: 1px solid #e2e8f0; color: #64748b; padding: 10px 16px; border-radius: 12px; font-size: 0.85rem; font-weight: 700; white-space: nowrap; cursor: pointer; transition: all 0.2s; }
+    .btn-archer-tab.active { background-color: #e0e7ff; border-color: #c7d2fe; color: #3730a3; }
+    .arrow-boxes { display: grid; gap: 8px; margin-bottom: 16px; }
+    .arrow-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; height: 52px; display: flex; align-items: center; justify-content: center; font-size: 1.05rem; font-weight: 800; color: #4f46e5; padding: 0 4px; text-align: center; }
+    .input-mode-toggle { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+    .btn-input-mode { background: #f8fafc; border: 1px solid #e2e8f0; color: #64748b; padding: 10px 5px; border-radius: 12px; font-weight: 700; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; text-align: center; }
+    .btn-input-mode.active { background: #fbbf24; border-color: #f59e0b; color: #78350f; box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2); }
+    .virtual-target-card { background: #18191c; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 20px; position: relative; }
+    .target-wrapper { position: relative; width: 100%; max-width: 300px; height: 300px; border: 2px solid #334155; border-radius: 12px; overflow: hidden; background-color: #000; touch-action: none; cursor: grab; margin-top: 10px; }
+    .target-wrapper:active { cursor: grabbing; }
+    .canvas-container { position: absolute; transform-origin: 0 0; }
+    canvas { display: block; }
+    .zoom-controls { display: flex; gap: 6px; margin-top: 10px; justify-content: center; flex-wrap: wrap; }
+    .btn-ref-link { display: inline-flex; align-items: center; gap: 6px; background: #e0e7ff; color: #3730a3; text-decoration: none; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; }
+    .btn-ref-link:hover { background: #c7d2fe; }
+    .target-face { width: 260px; height: 260px; border-radius: 50%; position: relative; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); background-color: #0f172a; cursor: pointer; }
+    .t-ring { border-radius: 50%; display: flex; align-items: center; justify-content: center; position: absolute; cursor: pointer; font-weight: 800; transition: transform 0.1s; }
+    .t-ring:hover { transform: scale(1.02); }
+    .ring-1 { width: 135%; height: 135%; background: #ffffff; color: #1e293b; border: 1px solid #cbd5e1; font-size: 0.75rem; }
+    .ring-2 { width: 122%; height: 122%; background: #ffffff; color: #1e293b; border: 1px solid #cbd5e1; font-size: 0.75rem; }
+    .ring-3 { width: 110%; height: 110%; background: #1e1e1e; color: #ffffff; border: 1px solid #334155; font-size: 0.75rem; }
+    .ring-4 { width: 98%; height: 98%; background: #1e1e1e; color: #ffffff; border: 1px solid #334155; font-size: 0.75rem; }
+    .ring-5 { width: 86%; height: 86%; background: #0284c7; color: #ffffff; border: 1px solid #38bdf8; font-size: 0.8rem; }
+    .ring-6 { width: 73%; height: 73%; background: #0284c7; color: #ffffff; border: 1px solid #38bdf8; font-size: 0.8rem; }
+    .ring-7 { width: 60%; height: 60%; background: #dc2626; color: #ffffff; border: 1px solid #f87171; font-size: 0.85rem; }
+    .ring-8 { width: 47%; height: 47%; background: #dc2626; color: #ffffff; border: 1px solid #f87171; font-size: 0.85rem; }
+    .ring-9 { width: 34%; height: 34%; background: #fbbf24; color: #78350f; border: 1px solid #fef08a; font-size: 0.9rem; }
+    .ring-10 { width: 20%; height: 20%; background: #fbbf24; color: #78350f; border: 1px solid #fef08a; font-size: 0.9rem; }
+    .ring-x { width: 7%; height: 7%; background: #fbbf24; color: #78350f; border: 1px solid #d97706; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 900; z-index: 10; }
+    .numpad-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+    .btn-num { height: 50px; border-radius: 12px; border: none; font-size: 1rem; font-weight: 800; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: transform 0.1s; line-height: 1.1; }
+    .btn-num:active { transform: scale(0.96); }
+    .btn-num small { font-size: 0.65rem; font-weight: 700; opacity: 0.85; }
+    .num-x, .num-10, .num-9 { background-color: #fef3c7; color: #b45309; border: 1px solid #fde047; }
+    .num-x-wbn { background-color: #e0e7ff; color: #3730a3; border: 1px solid #a5b4fc; }
+    .num-8, .num-7 { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+    .num-6, .num-5 { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+    .num-4, .num-3 { background-color: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
+    .num-2, .num-1 { background-color: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
+    .num-m { background-color: #18191c; color: #ffffff; }
+    .btn-save-rambahan { background-color: #18191c; color: #ffffff; font-weight: 800; padding: 14px; border-radius: 12px; border: none; cursor: pointer; font-size: 0.95rem; width: 100%; box-shadow: 0 4px 12px rgba(24, 25, 28, 0.15); text-align: center; text-decoration: none; display: block; }
+    .participants-summary-grid { display: flex; flex-direction: column; gap: 16px; margin-top: 16px; }
+    .participant-summary-card { background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 16px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02); }
+    .participant-summary-card.active-card { border: 2px solid #6366f1; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.1); }
+    .p-card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; margin-bottom: 12px; flex-wrap: wrap; gap: 6px; }
+    .p-card-name { font-weight: 800; color: #0f172a; font-size: 1rem; }
+    .p-card-club { font-size: 0.75rem; color: #64748b; }
+    .p-card-total-badge { background-color: #e0e7ff; color: #3730a3; padding: 6px 12px; border-radius: 10px; font-weight: 800; font-size: 0.85rem; }
+    .end-history-list { display: flex; flex-direction: column; gap: 8px; }
+    .end-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 0.85rem; gap: 8px; }
+    .end-row.draft-row { background-color: #fef3c7; border: 1px dashed #f59e0b; color: #92400e; }
+    .end-row.draft-row .end-label,
+    .end-row.draft-row .end-dots,
+    .end-row.draft-row .end-total { color: #92400e; }
+    .end-label { font-weight: 700; color: #4f46e5; width: 78px; flex-shrink: 0; }
+    .end-dots { color: #334155; letter-spacing: 1px; font-weight: 700; font-size: 0.85rem; flex: 1; text-align: center; overflow-x: auto; }
+    .end-total { font-weight: 800; color: #0f172a; font-size: 0.9rem; flex-shrink: 0; }
+    .crud-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .btn-crud-edit { background: #e0e7ff; color: #4f46e5; border: none; width: 28px; height: 28px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; transition: background 0.15s; }
+    .btn-crud-edit:hover { background: #c7d2fe; }
+    .btn-crud-delete { background: #fee2e2; color: #dc2626; border: none; width: 28px; height: 28px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; transition: background 0.15s; }
+    .btn-crud-delete:hover { background: #fecaca; }
+    .edit-arrow-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px 14px; border-radius: 12px; }
+    .edit-arrow-select { padding: 8px 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-weight: 700; font-size: 0.85rem; color: #0f172a; background: #ffffff; cursor: pointer; }
+    .podium-container { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 12px; margin-bottom: 24px; align-items: flex-end; }
+    .podium-box { background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 18px 12px; text-align: center; display: flex; flex-direction: column; align-items: center; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02); }
+    .podium-box.rank-1-box { border-color: #fbbf24; background: linear-gradient(to bottom, #ffffff, #fffbeb); transform: translateY(-8px); box-shadow: 0 10px 25px rgba(251, 191, 36, 0.15); }
+    .podium-avatar { width: 48px; height: 48px; border-radius: 50%; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1rem; margin-bottom: 10px; border: 2px solid #fde047; }
+    .podium-name { font-weight: 800; font-size: 0.9rem; color: #0f172a; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+    .podium-club { font-size: 0.7rem; color: #64748b; margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+    .podium-score-badge { background: #f8fafc; border: 1px solid #e2e8f0; padding: 4px 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 800; color: #4f46e5; }
+    .leaderboard-table { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 8px; }
+    .leaderboard-table th { text-align: left; font-size: 0.7rem; color: #64748b; padding: 8px 4px; border-bottom: 2px solid #f1f5f9; text-transform: uppercase; white-space: nowrap; }
+    .leaderboard-table td { padding: 12px 4px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; }
+    .btn-detail-icon { background: #f1f5f9; border: 1px solid #e2e8f0; color: #4f46e5; padding: 5px 8px; border-radius: 8px; cursor: pointer; font-size: 0.7rem; font-weight: 700; white-space: nowrap; }
+    .btn-detail-icon:hover { background: #e0e7ff; }
+    .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 1000; }
+    .modal.active { display: flex; }
+    .modal-content { background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 24px; width: 100%; max-width: 420px; padding: 24px; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); }
+    @media (max-width: 900px) { .nav-links-desktop { display: none; } .btn-hamburger-mobile { display: block; } .desktop-navbar { padding: 12px 16px; } main { padding: 16px 12px; } .dashboard-card { padding: 16px 12px; border-radius: 16px; } .podium-container { display: flex; flex-direction: column; align-items: center; gap: 12px; } .podium-box { width: 100%; max-width: 100%; } .podium-box.rank-1-box { transform: none; } }
+    .desktop-footer { display: block; }
+    .mobile-footer-text { display: none; }
+    @media (max-width: 900px) { .desktop-footer { display: none; } .mobile-footer-text { display: block; } }
+  </style>
+</head>
+
+<body>
+
+  <header class="desktop-navbar">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <button type="button" class="btn-hamburger-mobile" onclick="toggleMobileSidebar()"><i class="fa-solid fa-bars"></i></button>
+      <div class="brand"><div class="brand-icon">🎯</div><span>SCORING<span style="color:#6366f1;">PTU</span></span></div>
+    </div>
+    <nav class="nav-links-desktop">
+      <a href="home.html"><i class="fa-solid fa-sliders"></i> Setup Latihan</a>
+      <a href="scoring.html" class="active"><i class="fa-solid fa-bullseye"></i> Papan Skor</a>
+      <a href="riwayat.html"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat Sesi</a>
+      <a href="pendaftaran.html"><i class="fa-solid fa-users"></i> Registrasi</a>
+      <a href="index.html" id="nav-public-score-desktop" style="display: none;"><i class="fa-solid fa-table"></i> Public Score</a>
+      <div class="role-selector-wrapper">
+        <select id="app-role-picker-desktop" class="role-select" onchange="switchRole(this.value)">
+          <option value="scorer" selected>📱 Scorer (HP)</option>
+          <option value="display">🖥️ Live Display</option>
+          <option value="admin">⚙️ Admin / Panitia</option>
+        </select>
+      </div>
+    </nav>
+    <div class="user-profile-header">
+      <div class="user-avatar" id="user-avatar-box">A</div>
+      <div style="display: flex; flex-direction: column; line-height: 1.2;">
+        <span style="font-size: 0.85rem; font-weight: 700; color: #0f172a;" id="user-name-text">SCORINGPTU</span>
+        <span style="font-size: 0.7rem; color: #64748b; font-weight: 600;" id="user-club-text">Klub Panahan</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="mobile-sidebar-overlay" id="mobile-overlay" onclick="toggleMobileSidebar()"></div>
+  <aside class="mobile-sidebar" id="mobile-sidebar">
+    <div>
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div class="brand" style="color:#fff;"><div class="brand-icon" style="background:#fff; color:#18191c;">🎯</div><span>SCORING<span style="color:#818cf8;">PTU</span></span></div>
+        <button type="button" onclick="toggleMobileSidebar()" style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <nav class="mobile-nav-menu">
+        <a href="home.html"><i class="fa-solid fa-sliders"></i> Setup Latihan</a>
+        <a href="scoring.html" class="active"><i class="fa-solid fa-bullseye"></i> Papan Skor</a>
+        <a href="riwayat.html"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat Sesi</a>
+        <a href="pendaftaran.html"><i class="fa-solid fa-users"></i> Registrasi Peserta</a>
+        <a href="index.html" id="nav-public-score-mobile" style="display: none;"><i class="fa-solid fa-table"></i> Public Score</a>
+        <div class="role-selector-wrapper" style="margin-top: 10px;">
+          <select id="app-role-picker-mobile" class="role-select" style="width: 100%;" onchange="switchRole(this.value)">
+            <option value="scorer" selected>📱 Scorer (HP)</option>
+            <option value="display">🖥️ Live Display</option>
+            <option value="admin">⚙️ Admin / Panitia</option>
+          </select>
+        </div>
+      </nav>
+    </div>
+    <div class="mobile-footer-text" style="font-size: 0.75rem; color: #94a3b8; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px;">
+      <p>Copyright &copy; 2026 &bull; Mela Aulia Syarifah</p>
+    </div>
+  </aside>
+
+  <main>
+    <!-- PANEL PEMBERITAHUAN — SARAN PENGGUNAAN KEYPAD -->
+<div id="keypad-notice-panel" class="keypad-notice-panel">
+  <div class="keypad-notice-header">
+    <i class="fa-solid fa-keyboard"></i>
+    <span>Info & Saran Input Skor - Lebih Praktis Pakai Mode Keypad Yaw</span>
+  </div>
+  <p class="keypad-notice-desc">
+    Untuk pencatatan poin yg lebih cepat, akurat, dan minim salah klik-terutama saat HP digunakan satu tangan atau di bawah terik matahari-disarankan menggunakan mode <strong>Keypad</strong>.
+  </p>
+</div>
+    <div id="page-scoring">
+      <div class="page-navigation">
+        <div>
+          <span class="session-info" id="sc-info">Memuat data sesi...</span>
+          <h1 style="font-size: 1.3rem; font-weight: 800; color: #0f172a;" id="sc-rambahan-title">Rambahan 1</h1>
+        </div>
+        <button type="button" class="btn-change-setup" onclick="restartToSetup()"><i class="fa-solid fa-gear"></i> Ubah Setup</button>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <p style="font-size:0.75rem; color:#64748b; font-weight:700; text-transform: uppercase;" id="sc-giliran-label">Giliran Pemanah:</p>
+        <span id="sc-arrow-info" style="font-size: 0.8rem; font-weight: 700; color: #4f46e5;">3 Arrow</span>
+      </div>
+      <div class="archer-selector" id="sc-archer-tabs"></div>
+
+      <div class="dashboard-card">
+        <p style="font-size:0.85rem; color:#0f172a; margin-bottom:12px; font-weight:700;" id="sc-current-archer-label">Poin Arrow:</p>
+        <div class="arrow-boxes" id="sc-arrow-boxes"></div>
+
+        <div class="input-mode-toggle">
+          <button type="button" class="btn-input-mode active" id="btn-mode-keypad" onclick="switchInputMode('keypad')"><i class="fa-solid fa-calculator"></i> Keypad</button>
+          <button type="button" class="btn-input-mode" id="btn-mode-target" onclick="switchInputMode('target')"><i class="fa-solid fa-bullseye"></i> Target Bulat</button>
+          <button type="button" class="btn-input-mode" id="btn-mode-walet" onclick="switchInputMode('walet')"><i class="fa-solid fa-caret-up"></i> Target Walet</button>
+        </div>
+
+        <div id="container-keypad" class="numpad-grid">
+          <button type="button" class="btn-num num-x" onclick="inputScore('X')">X(10)</button>
+          <button type="button" class="btn-num num-x-wbn" onclick="inputScore('X_WBN')">X(6)</button>
+          <button type="button" class="btn-num num-10" onclick="inputScore('10')">10</button>
+          <button type="button" class="btn-num num-9" onclick="inputScore('9')">9</button>
+          <button type="button" class="btn-num num-8" onclick="inputScore('8')">8</button>
+          <button type="button" class="btn-num num-7" onclick="inputScore('7')">7</button>
+          <button type="button" class="btn-num num-6" onclick="inputScore('6')">6</button>
+          <button type="button" class="btn-num num-5" onclick="inputScore('5')">5</button>
+          <button type="button" class="btn-num num-4" onclick="inputScore('4')">4</button>
+          <button type="button" class="btn-num num-3" onclick="inputScore('3')">3</button>
+          <button type="button" class="btn-num num-2" onclick="inputScore('2')">2</button>
+          <button type="button" class="btn-num num-1" onclick="inputScore('1')">1</button>
+          <button type="button" class="btn-num num-m" style="grid-column: span 4;" onclick="inputScore('M')">M (Miss - 0)</button>
+        </div>
+
+        <div id="container-target" class="virtual-target-card" style="display: none;" onclick="handleVirtualTargetClick(event)">
+          <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:30px; font-weight:700; text-align:center;"><i class="fa-solid fa-hand-pointer"></i> Klik lingkaran angka (1-10, X) atau luar target untuk Miss (M)</div>
+          <div class="target-face" onclick="handleVirtualTargetClick(event)">
+            <div class="t-ring ring-1" onclick="event.stopPropagation(); inputScore('1')"><span style="position:absolute; top:1px;">1</span></div>
+            <div class="t-ring ring-2" onclick="event.stopPropagation(); inputScore('2')"><span style="position:absolute; top:1px;">2</span></div>
+            <div class="t-ring ring-3" onclick="event.stopPropagation(); inputScore('3')"><span style="position:absolute; top:1px;">3</span></div>
+            <div class="t-ring ring-4" onclick="event.stopPropagation(); inputScore('4')"><span style="position:absolute; top:1px;">4</span></div>
+            <div class="t-ring ring-5" onclick="event.stopPropagation(); inputScore('5')"><span style="position:absolute; top:1px;">5</span></div>
+            <div class="t-ring ring-6" onclick="event.stopPropagation(); inputScore('6')"><span style="position:absolute; top:1px;">6</span></div>
+            <div class="t-ring ring-7" onclick="event.stopPropagation(); inputScore('7')"><span style="position:absolute; top:1px;">7</span></div>
+            <div class="t-ring ring-8" onclick="event.stopPropagation(); inputScore('8')"><span style="position:absolute; top:1px;">8</span></div>
+            <div class="t-ring ring-9" onclick="event.stopPropagation(); inputScore('9')"><span style="position:absolute; top:1px;">9</span></div>
+            <div class="t-ring ring-10" onclick="event.stopPropagation(); inputScore('10')"><span style="position:absolute; top:1px;">10</span></div>
+            <div class="ring-x" onclick="event.stopPropagation(); inputScore('X')">X(10)</div>
+          </div>
+        </div>
+
+        <div id="container-walet" class="virtual-target-card" style="display: none;">
+          <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:5px; font-weight:700; text-align:center;"><i class="fa-solid fa-hand-pointer"></i> Klik foto target segitiga untuk input skor otomatis</div>
+          <div class="target-wrapper" id="targetWrapper">
+            <div class="canvas-container" id="canvasContainer"><canvas id="targetCanvas"></canvas></div>
+          </div>
+          <div class="zoom-controls">
+            <button type="button" class="btn-change-setup" onclick="zoomTarget(1.2)">🔍 +</button>
+            <button type="button" class="btn-change-setup" onclick="zoomTarget(0.8)">🔍 -</button>
+            <button type="button" class="btn-change-setup" onclick="resetTargetView()">Reset View</button>
+            <a href="target.jpg" target="_blank" rel="noopener noreferrer" class="btn-ref-link"><i class="fa-solid fa-image"></i> Buka Foto Target</a>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: 10px;">
+          <button type="button" class="btn-change-setup" style="background:#f1f5f9; justify-content:center; padding:14px; font-weight:800;" onclick="undoScore()"><i class="fa-solid fa-delete-left"></i> Undo</button>
+          <button type="button" class="btn-save-rambahan" onclick="nextTurnOrRambahan()">Simpan Rambahan <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+      </div>
+
+      <p style="font-size:0.75rem; color:#64748b; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; margin-bottom: 10px;">Rekap Hasil Skor Sesi :</p>
+      <div class="participants-summary-grid" id="participants-summary-grid"></div>
+    </div>
+
+    <div id="page-leaderboard" style="display: none;">
+      <div class="page-navigation">
+        <div>
+          <span class="session-info">HASIL AKHIR SESI</span>
+          <h1 style="font-size: 1.3rem; font-weight: 800; color: #0f172a;">🏆 Peringkat Teratas (Leaderboard)</h1>
+        </div>
+      </div>
+      <div class="podium-container" id="podium-container"></div>
+      <div class="dashboard-card">
+        <p style="font-size:0.8rem; color:#4f46e5; font-weight:800; margin-bottom:12px; text-transform:uppercase;">Daftar Seluruh Peserta</p>
+        <table class="leaderboard-table">
+          <thead><tr><th>Rank</th><th>Pemanah</th><th style="text-align:center;">X Count</th><th style="text-align:right;">Skor Total</th><th style="text-align:center;">Detail</th></tr></thead>
+          <tbody id="lb-table-body"></tbody>
+        </table>
+      </div>
+      <button type="button" class="btn-save-rambahan" style="text-align:center;" onclick="proceedToNextSession()"><i class="fa-solid fa-arrow-right"></i> Lanjut ke Sesi Berikutnya</button>
+    </div>
+  </main>
+
+  <!-- MODAL DETAIL RAMBAHAN -->
+  <div class="modal" id="modal-detail">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 id="modal-archer-title" style="color: #0f172a; font-size: 1.1rem; font-weight: 800;">Detail Rambahan</h3>
+        <button type="button" onclick="closeDetailModal()" style="background:none; border:none; color:#64748b; cursor:pointer; font-size:1.2rem;"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="end-history-list" id="modal-end-list"></div>
+      <button type="button" onclick="closeDetailModal()" class="btn-save-rambahan" style="margin-top:16px; background:#f1f5f9; color:#0f172a;">Tutup</button>
+    </div>
+  </div>
+
+  <!-- MODAL CRUD: EDIT SKOR RAMBAHAN -->
+  <div class="modal" id="modal-edit-end">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 id="edit-modal-title" style="color: #0f172a; font-size: 1.05rem; font-weight: 800;">Edit Rambahan</h3>
+        <button type="button" onclick="closeEditEndModal()" style="background:none; border:none; color:#64748b; cursor:pointer; font-size:1.2rem;"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p style="font-size: 0.78rem; color: #64748b; margin-bottom: 14px;">Pilih ulang poin tiap anak panah di bawah ini lalu simpan perubahan.</p>
+      <div id="edit-arrows-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px;"></div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <button type="button" onclick="deleteEndFromModal()" style="background: #fee2e2; color: #dc2626; border: none; padding: 12px; border-radius: 12px; font-weight: 800; cursor: pointer; font-size: 0.85rem;"><i class="fa-solid fa-trash"></i> Hapus End</button>
+        <button type="button" onclick="saveEditedEnd()" class="btn-save-rambahan" style="padding: 12px; font-size: 0.85rem;"><i class="fa-solid fa-check"></i> Simpan Perubahan</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="desktop-footer" style="background: #222; color: white; text-align: center; padding: 20px; margin-top: 50px;">
+    <p>Copyright &copy; 2026 &bull; Mela Aulia Syarifah</p>
+  </footer>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc, serverTimestamp, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBO7QmIO80laPQUqKj80C-QZ74ZHPK6WJA",
+      authDomain: "scoringptu.firebaseapp.com",
+      projectId: "scoringptu",
+      storageBucket: "scoringptu.firebasestorage.app",
+      messagingSenderId: "790472578115",
+      appId: "1:790472578115:web:0f4d1395bc484686c9f0f6",
+      measurementId: "G-Z6TL4KDNJJ"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let appConfig = null;
+    let activeSessionDocId = '';
+    let currentEnd = 1;
+    let activeSessionIndex = 0;
+    let activeArcherIndex = 0;
+    let currentArrowsInput = [];
+    let liveSyncTimer = null;
+
+    let editingTarget = { pIdx: null, eIdx: null };
+
+    function getActiveUser() {
+      const rawTab = sessionStorage.getItem('activeArcheryUser');
+      if (rawTab) {
+        try {
+          return JSON.parse(rawTab);
+        } catch (e) {}
+      }
+      const rawLocal = localStorage.getItem('activeArcheryUser');
+      if (rawLocal) {
+        try {
+          const parsed = JSON.parse(rawLocal);
+          sessionStorage.setItem('activeArcheryUser', JSON.stringify(parsed));
+          return parsed;
+        } catch (e) {}
+      }
+      return { name: 'Admin Tamu', email: 'guest@archery.com', club: 'Independen' };
+    }
+
+    function getAccountKey() {
+      const activeUser = getActiveUser();
+      const cleanEmail = String(activeUser.email || 'guest@archery.com').trim().toLowerCase();
+      return cleanEmail.replace(/[^a-z0-9]/gi, '_');
+    }
+
+    function syncAdminNavAccess() {
+      const user = getActiveUser();
+      const isAdmin = Boolean(
+        user &&
+        (String(user.role || '').toLowerCase() === 'admin' ||
+         String(user.email || '').trim().toLowerCase() === 'mimin@gmail.com')
+      );
+
+      const deskLink = document.getElementById('nav-public-score-desktop');
+      const mobLink = document.getElementById('nav-public-score-mobile');
+
+      if (deskLink) deskLink.style.display = isAdmin ? 'inline-flex' : 'none';
+      if (mobLink) mobLink.style.display = isAdmin ? 'flex' : 'none';
+    }
+
+    function formatScoreLabel(code) {
+      if (code === 'X') return 'X(10)';
+      if (code === 'X_WBN') return 'X(6)';
+      return code;
+    }
+
+    function getScoreNumericValue(code) {
+      if (code === 'X') return 10;
+      if (code === 'X_WBN') return 6;
+      if (code === 'M' || code === undefined || code === null) return 0;
+      return parseInt(code, 10) || 0;
+    }
+
+    function calculateArcherStats(p) {
+      let totalScore = 0, totalX = 0;
+      (p.scores || []).forEach(endArr => {
+        const arrows = Array.isArray(endArr) ? endArr : (endArr.arrows || []);
+        arrows.forEach(code => {
+          totalScore += getScoreNumericValue(code);
+          if (code === 'X' || code === 'X_WBN') totalX += 1;
+        });
+      });
+      return { totalScore, totalX };
+    }
+
+    function convertScoresToFirebase(participants) {
+      return (participants || []).map(p => ({
+        ...p,
+        scores: (p.scores || []).map((endArr, index) => ({
+          endIndex: index + 1,
+          arrows: Array.isArray(endArr) ? endArr : (endArr.arrows || [])
+        }))
+      }));
+    }
+
+    function convertScoresFromFirebase(participants) {
+      return (participants || []).map(p => ({
+        ...p,
+        scores: (p.scores || []).map(endObj => {
+          if (Array.isArray(endObj)) return endObj;
+          return endObj.arrows || [];
+        })
+      }));
+    }
+
+    function buildLiveDraftPayload() {
+      const arrows = currentArrowsInput.map(i => typeof i === 'object' ? i.val : i);
+      if (arrows.length === 0) return null;
+      const sum = arrows.reduce((acc, code) => acc + getScoreNumericValue(code), 0);
+      return {
+        archerIndex: activeArcherIndex,
+        endNumber: currentEnd,
+        arrows,
+        sum,
+        updatedAt: Date.now()
+      };
+    }
+
+    async function syncLiveDraftToFirebase(forceNull = false) {
+      if (!activeSessionDocId || !appConfig) return;
+      const payload = forceNull ? null : buildLiveDraftPayload();
+      appConfig.activeLiveInput = payload;
+      try {
+        const docRef = doc(db, "sessions", activeSessionDocId);
+        await updateDoc(docRef, {
+          activeLiveInput: payload,
+          updatedAt: serverTimestamp()
+        });
+      } catch (err) {
+        console.warn("Sinkronisasi draft skor tertunda:", err.message);
+      }
+    }
+
+    function scheduleLiveDraftSync(forceNull = false) {
+      clearTimeout(liveSyncTimer);
+      liveSyncTimer = setTimeout(() => {
+        syncLiveDraftToFirebase(forceNull);
+      }, 150);
+    }
+
+    const canvas = document.getElementById('targetCanvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const container = document.getElementById('canvasContainer');
+    const wrapper = document.getElementById('targetWrapper');
+    const waletImg = new Image();
+    waletImg.src = "target.jpg";
+
+    let scale = 1, posX = 0, posY = 0, isDragging = false, startX, startY;
+
+    waletImg.onload = () => {
+      canvas.width = waletImg.width;
+      canvas.height = waletImg.height;
+      drawTargetCanvas();
+      resetTargetView();
+    };
+
+    function drawTargetCanvas() {
+      if (!canvas.width || !canvas.height) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(waletImg, 0, 0);
+      currentArrowsInput.forEach((shot) => {
+        if (shot.x && shot.y) {
+          ctx.beginPath();
+          ctx.arc(shot.x, shot.y, 12, 0, 2 * Math.PI);
+          ctx.fillStyle = 'rgba(255, 0, 0, 0.85)';
+          ctx.fill();
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = '#fff';
+          ctx.stroke();
+          ctx.fillStyle = '#fff';
+          ctx.font = 'bold 10px Arial';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(formatScoreLabel(shot.val), shot.x, shot.y);
+        }
+      });
+    }
+
+    function zoomTarget(factor) { scale = Math.min(Math.max(0.5, scale * factor), 4); updateTargetTransform(); }
+    function resetTargetView() {
+      if (!waletImg.width) return;
+      scale = wrapper.clientWidth / waletImg.width;
+      posX = 0; posY = 0;
+      updateTargetTransform();
+    }
+    function updateTargetTransform() { container.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`; }
+
+    wrapper.addEventListener('pointerdown', (e) => { isDragging = true; startX = e.clientX - posX; startY = e.clientY - posY; });
+    window.addEventListener('pointermove', (e) => { if (!isDragging) return; posX = e.clientX - startX; posY = e.clientY - startY; updateTargetTransform(); });
+    window.addEventListener('pointerup', () => { isDragging = false; });
+
+    canvas.addEventListener('click', (e) => {
+      if (!appConfig || currentArrowsInput.length >= appConfig.arrowCount) { alert("Arrow sudah penuh untuk rambahan ini!"); return; }
+      const rect = canvas.getBoundingClientRect();
+      const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
+      const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
+      const pixel = ctx.getImageData(clickX, clickY, 1, 1).data;
+      const scoreVal = calculateWaletScore(pixel[0], pixel[1], pixel[2], clickX, clickY);
+
+      currentArrowsInput.push({ val: scoreVal, x: clickX, y: clickY });
+      drawTargetCanvas();
+      renderArrowBoxes();
+      renderAllParticipantsSummary();
+      scheduleLiveDraftSync(false);
+    });
+
+    function calculateWaletScore(r, g, b, x, y) {
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const distance = Math.hypot(x - centerX, y - centerY);
+      if (distance > canvas.width * 0.38) return 'M';
+      if (r > 160 && g > 140 && b < 120) {
+        const centerDist = Math.hypot(x - centerX, y - (canvas.height * 0.52));
+        return centerDist < canvas.width * 0.12 ? '6' : '1';
+      }
+      if (r > 140 && g < 110 && b < 110) return '5';
+      if (r < 120 && g > 90 && b > 140) return '4';
+      if (r < 90 && g < 90 && b < 90) return '2';
+      if (r > 180 && g > 180 && b > 180) return distance > canvas.width * 0.32 ? 'M' : '3';
+      return 'M';
+    }
+
+    function toggleMobileSidebar() { document.getElementById('mobile-sidebar').classList.toggle('active'); document.getElementById('mobile-overlay').classList.toggle('active'); }
+    function switchInputMode(mode) {
+      document.getElementById('btn-mode-keypad').classList.remove('active');
+      document.getElementById('btn-mode-target').classList.remove('active');
+      document.getElementById('btn-mode-walet').classList.remove('active');
+      document.getElementById('container-keypad').style.display = 'none';
+      document.getElementById('container-target').style.display = 'none';
+      document.getElementById('container-walet').style.display = 'none';
+
+      if (mode === 'keypad') { document.getElementById('btn-mode-keypad').classList.add('active'); document.getElementById('container-keypad').style.display = 'grid'; }
+      else if (mode === 'target') { document.getElementById('btn-mode-target').classList.add('active'); document.getElementById('container-target').style.display = 'flex'; }
+      else if (mode === 'walet') { document.getElementById('btn-mode-walet').classList.add('active'); document.getElementById('container-walet').style.display = 'flex'; resetTargetView(); }
+    }
+
+    function handleVirtualTargetClick(event) { inputScore('M'); }
+
+    function loadActiveUserProfile() {
+      const activeUser = getActiveUser();
+      document.getElementById('user-name-text').innerText = activeUser.name || 'Archer Pro';
+      document.getElementById('user-club-text').innerText = activeUser.club || 'Klub Panahan';
+      if (activeUser.name) {
+        const nameParts = activeUser.name.trim().split(' ').filter(n => n.length > 0);
+        document.getElementById('user-avatar-box').innerText = nameParts.length >= 2 ? (nameParts[0][0] + nameParts[1][0]).toUpperCase() : nameParts[0][0].toUpperCase();
+      }
+    }
+
+    async function loadSessionFromFirebase() {
+      const accountKey = getAccountKey();
+      activeSessionDocId = `active_session_${accountKey}`;
+      currentEnd = 1;
+      activeSessionIndex = 0;
+      activeArcherIndex = 0;
+      currentArrowsInput = [];
+
+      try {
+        const docRef = doc(db, "sessions", activeSessionDocId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const rawData = docSnap.data();
+          rawData.participants = convertScoresFromFirebase(rawData.participants);
+          appConfig = rawData;
+
+          if (appConfig.activeLiveInput && typeof appConfig.activeLiveInput.archerIndex === 'number') {
+            activeArcherIndex = appConfig.activeLiveInput.archerIndex;
+            if (appConfig.activeLiveInput.endNumber) {
+              currentEnd = appConfig.activeLiveInput.endNumber;
+            }
+            currentArrowsInput = (appConfig.activeLiveInput.arrows || []).map(code => ({ val: code, x: null, y: null }));
+          }
+
+          initScoring();
+        } else {
+          alert("Tidak ada sesi aktif untuk akun ini. Silakan buat setup di halaman Setup Latihan.");
+          window.location.href = 'home.html';
+        }
+      } catch (error) {
+        console.error("Gagal memuat sesi:", error);
+        alert("Gagal terhubung ke server: " + error.message);
+      }
+    }
+
+    function getUniqueSessions() {
+      const sessions = [];
+      if (appConfig && appConfig.participants) {
+        appConfig.participants.forEach(p => {
+          const s = p.sesi || 'Sesi 1';
+          if (!sessions.includes(s)) sessions.push(s);
+        });
+      }
+      return sessions.sort();
+    }
+
+    function initScoring() {
+      if (!appConfig) return;
+
+      const uniqueSessions = getUniqueSessions();
+      if (activeSessionIndex >= uniqueSessions.length) activeSessionIndex = 0;
+      const currentSessionName = uniqueSessions[activeSessionIndex] || 'Sesi 1';
+
+      document.getElementById('sc-info').innerText = `${appConfig.busur} • ${appConfig.jarak}`;
+      document.getElementById('sc-rambahan-title').innerText = `${currentSessionName} • Rambahan ${currentEnd} dari ${appConfig.totalEnd}`;
+      document.getElementById('sc-arrow-info').innerText = `${appConfig.arrowCount} Arrow`;
+
+      const currentSessionParticipants = appConfig.participants.filter(p => (p.sesi || 'Sesi 1') === currentSessionName);
+      document.getElementById('sc-giliran-label').innerText = `Giliran Pemanah (${currentSessionName}):`;
+
+      const tabsContainer = document.getElementById('sc-archer-tabs');
+      tabsContainer.innerHTML = '';
+
+      currentSessionParticipants.forEach((p) => {
+        const globalIdx = appConfig.participants.indexOf(p);
+        const btn = document.createElement('button');
+        btn.className = `btn-archer-tab ${globalIdx === activeArcherIndex ? 'active' : ''}`;
+        btn.innerText = `${p.name} [${p.bantalan || 'Bantalan 1'}]`;
+        btn.onclick = () => {
+          activeArcherIndex = globalIdx;
+          currentArrowsInput = [];
+          initScoring();
+          scheduleLiveDraftSync(true);
+        };
+        tabsContainer.appendChild(btn);
+      });
+
+      const activeP = appConfig.participants[activeArcherIndex];
+      if (!activeP || (activeP.sesi || 'Sesi 1') !== currentSessionName) {
+        const firstInSession = appConfig.participants.findIndex(p => (p.sesi || 'Sesi 1') === currentSessionName);
+        if (firstInSession !== -1) activeArcherIndex = firstInSession;
+      }
+
+      const currentActiveP = appConfig.participants[activeArcherIndex];
+      if (currentActiveP) {
+        document.getElementById('sc-current-archer-label').innerText = `Poin Arrow ${currentActiveP.name} (${currentActiveP.bantalan || 'Bantalan 1'}) (Rambahan ${currentEnd}):`;
+      }
+
+      renderArrowBoxes();
+      renderAllParticipantsSummary();
+      drawTargetCanvas();
+    }
+
+    function renderArrowBoxes() {
+      if (!appConfig) return;
+      const boxContainer = document.getElementById('sc-arrow-boxes');
+      boxContainer.style.gridTemplateColumns = `repeat(${appConfig.arrowCount}, 1fr)`;
+      boxContainer.innerHTML = '';
+      for (let i = 0; i < appConfig.arrowCount; i++) {
+        const box = document.createElement('div');
+        box.className = 'arrow-box';
+        const item = currentArrowsInput[i];
+        const rawVal = item ? (typeof item === 'object' ? item.val : item) : null;
+        box.innerText = rawVal ? formatScoreLabel(rawVal) : '-';
+        boxContainer.appendChild(box);
+      }
+    }
+
+    function inputScore(val) {
+      if (!appConfig) return;
+      if (currentArrowsInput.length < appConfig.arrowCount) {
+        currentArrowsInput.push({ val: val, x: null, y: null });
+        renderArrowBoxes();
+        drawTargetCanvas();
+        renderAllParticipantsSummary();
+        scheduleLiveDraftSync(false);
+      } else {
+        alert("Arrow sudah penuh, silakan simpan rambahan atau undo.");
+      }
+    }
+
+    function undoScore() {
+      currentArrowsInput.pop();
+      renderArrowBoxes();
+      drawTargetCanvas();
+      renderAllParticipantsSummary();
+      scheduleLiveDraftSync(currentArrowsInput.length === 0);
+    }
+
+    function renderAllParticipantsSummary() {
+      const gridContainer = document.getElementById('participants-summary-grid');
+      if (!gridContainer || !appConfig || !Array.isArray(appConfig.participants)) return;
+      gridContainer.innerHTML = '';
+
+      appConfig.participants.forEach((p, pIdx) => {
+        let totalPoin = 0;
+        let totalXCount = 0;
+        let endRowsHTML = '';
+
+        (p.scores || []).forEach((endArr, eIdx) => {
+          const arrows = Array.isArray(endArr) ? endArr : (endArr.arrows || []);
+          let endSum = 0;
+          arrows.forEach(code => {
+            endSum += getScoreNumericValue(code);
+            if (code === 'X' || code === 'X_WBN') totalXCount += 1;
+          });
+          totalPoin += endSum;
+
+          const formattedArrows = arrows.map(code => formatScoreLabel(code)).join(' • ');
+          endRowsHTML += `
+            <div class="end-row">
+              <div class="end-label">End ${eIdx + 1}</div>
+              <div class="end-dots">${formattedArrows}</div>
+              <span class="end-total">${endSum} Poin</span>
+              <div class="crud-actions">
+                <button type="button" class="btn-crud-edit" title="Edit End ${eIdx + 1}" onclick="openEditEndModal(${pIdx}, ${eIdx})"><i class="fa-solid fa-pen"></i></button>
+                <button type="button" class="btn-crud-delete" title="Hapus End ${eIdx + 1}" onclick="deleteEndDirectly(${pIdx}, ${eIdx})"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </div>
+          `;
+        });
+
+        if (pIdx === activeArcherIndex && currentArrowsInput.length > 0) {
+          const activeVals = currentArrowsInput.map(item => typeof item === 'object' ? item.val : item);
+          let activeSum = 0;
+          activeVals.forEach(code => {
+            activeSum += getScoreNumericValue(code);
+            if (code === 'X' || code === 'X_WBN') totalXCount += 1;
+          });
+          totalPoin += activeSum;
+          const formattedActive = activeVals.map(c => formatScoreLabel(c)).join(' • ');
+          endRowsHTML += `
+            <div class="end-row draft-row">
+              <div class="end-label">✒️ End ${currentEnd}</div>
+              <div class="end-dots">✒️ ${formattedActive}</div>
+              <span class="end-total">${activeSum} Poin</span>
+            </div>
+          `;
+        }
+
+        const card = document.createElement('div');
+        card.className = `participant-summary-card ${pIdx === activeArcherIndex ? 'active-card' : ''}`;
+        card.innerHTML = `
+          <div class="p-card-header">
+            <div>
+              <div class="p-card-name">${p.name} ${pIdx === activeArcherIndex ? '🎯 (Aktif)' : ''}</div>
+              <div class="p-card-club">${p.club || 'Independen'} • <span style="color:#4f46e5; font-weight:700;">${p.bantalan || 'Bantalan 1'}</span> (${p.sesi || 'Sesi 1'})</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="background:#fef3c7; color:#b45309; padding:6px 10px; border-radius:10px; font-weight:800; font-size:0.8rem;">${totalXCount}X</span>
+              <div class="p-card-total-badge">Total: ${totalPoin} Poin</div>
+            </div>
+          </div>
+          <div class="end-history-list">${endRowsHTML || '<p style="font-size:0.75rem; color:#64748b; font-style:italic; text-align:center;">Belum ada rambahan tersimpan.</p>'}</div>
+        `;
+        gridContainer.appendChild(card);
+      });
+    }
+
+    const SCORE_OPTIONS = [
+      { value: 'X', label: 'X(10)' },
+      { value: 'X_WBN', label: 'X(6)' },
+      { value: '10', label: '10' },
+      { value: '9', label: '9' },
+      { value: '8', label: '8' },
+      { value: '7', label: '7' },
+      { value: '6', label: '6' },
+      { value: '5', label: '5' },
+      { value: '4', label: '4' },
+      { value: '3', label: '3' },
+      { value: '2', label: '2' },
+      { value: '1', label: '1' },
+      { value: 'M', label: 'M (0)' }
+    ];
+
+    function openEditEndModal(pIdx, eIdx) {
+      const p = appConfig.participants[pIdx];
+      if (!p || !p.scores || !p.scores[eIdx]) return;
+
+      editingTarget = { pIdx, eIdx };
+      document.getElementById('edit-modal-title').innerText = `Edit ${p.name} • End ${eIdx + 1}`;
+
+      const containerEl = document.getElementById('edit-arrows-container');
+      containerEl.innerHTML = '';
+
+      const rawEnd = p.scores[eIdx];
+      const arrows = Array.isArray(rawEnd) ? rawEnd : (rawEnd.arrows || []);
+
+      arrows.forEach((currentVal, aIdx) => {
+        const row = document.createElement('div');
+        row.className = 'edit-arrow-row';
+
+        const optionsHTML = SCORE_OPTIONS.map(opt =>
+          `<option value="${opt.value}" ${opt.value === String(currentVal) ? 'selected' : ''}>${opt.label}</option>`
+        ).join('');
+
+        row.innerHTML = `
+          <span style="font-weight:700; font-size:0.85rem; color:#334155;">Arrow ${aIdx + 1}</span>
+          <select class="edit-arrow-select" data-arrow-idx="${aIdx}">
+            ${optionsHTML}
+          </select>
+        `;
+        containerEl.appendChild(row);
+      });
+
+      document.getElementById('modal-edit-end').classList.add('active');
+    }
+
+    function closeEditEndModal() {
+      document.getElementById('modal-edit-end').classList.remove('active');
+      editingTarget = { pIdx: null, eIdx: null };
+    }
+
+    async function saveEditedEnd() {
+      const { pIdx, eIdx } = editingTarget;
+      if (pIdx === null || eIdx === null) return;
+
+      const selects = document.querySelectorAll('#edit-arrows-container .edit-arrow-select');
+      const updatedArrows = Array.from(selects).map(sel => sel.value);
+
+      const backupScores = JSON.parse(JSON.stringify(appConfig.participants[pIdx].scores));
+      appConfig.participants[pIdx].scores[eIdx] = updatedArrows;
+
+      const firebaseParticipants = convertScoresToFirebase(appConfig.participants);
+
+      try {
+        const docRef = doc(db, "sessions", activeSessionDocId);
+        await updateDoc(docRef, {
+          participants: firebaseParticipants,
+          updatedAt: serverTimestamp()
+        });
+        closeEditEndModal();
+        renderAllParticipantsSummary();
+      } catch (error) {
+        appConfig.participants[pIdx].scores = backupScores;
+        alert("Gagal menyimpan perubahan ke server: " + error.message);
+      }
+    }
+
+    async function deleteEndDirectly(pIdx, eIdx) {
+      const p = appConfig.participants[pIdx];
+      if (!p || !p.scores || !p.scores[eIdx]) return;
+
+      const konfirmasi = confirm(`Hapus skor End ${eIdx + 1} milik ${p.name}?`);
+      if (!konfirmasi) return;
+
+      const backupScores = JSON.parse(JSON.stringify(p.scores));
+      p.scores.splice(eIdx, 1);
+
+      const firebaseParticipants = convertScoresToFirebase(appConfig.participants);
+
+      try {
+        const docRef = doc(db, "sessions", activeSessionDocId);
+        await updateDoc(docRef, {
+          participants: firebaseParticipants,
+          updatedAt: serverTimestamp()
+        });
+        if (pIdx === activeArcherIndex && currentEnd > 1) {
+          currentEnd = p.scores.length + 1;
+          initScoring();
+        } else {
+          renderAllParticipantsSummary();
+        }
+      } catch (error) {
+        p.scores = backupScores;
+        alert("Gagal menghapus rambahan dari server: " + error.message);
+      }
+    }
+
+    async function deleteEndFromModal() {
+      const { pIdx, eIdx } = editingTarget;
+      if (pIdx === null || eIdx === null) return;
+      closeEditEndModal();
+      await deleteEndDirectly(pIdx, eIdx);
+    }
+
+    async function nextTurnOrRambahan() {
+      if (!appConfig) return;
+      if (currentArrowsInput.length < appConfig.arrowCount) {
+        alert(`Harap isi lengkap ${appConfig.arrowCount} arrow terlebih dahulu!`);
+        return;
+      }
+
+      clearTimeout(liveSyncTimer);
+
+      const plainValues = currentArrowsInput.map(i => typeof i === 'object' ? i.val : i);
+      if (!Array.isArray(appConfig.participants[activeArcherIndex].scores)) {
+        appConfig.participants[activeArcherIndex].scores = [];
+      }
+      appConfig.participants[activeArcherIndex].scores.push(plainValues);
+      appConfig.activeLiveInput = null;
+
+      const firebaseParticipants = convertScoresToFirebase(appConfig.participants);
+
+      try {
+        const docRef = doc(db, "sessions", activeSessionDocId);
+        await updateDoc(docRef, {
+          participants: firebaseParticipants,
+          activeLiveInput: null,
+          updatedAt: serverTimestamp()
+        });
+      } catch (error) {
+        alert("Gagal menyimpan ke server: " + error.message);
+        appConfig.participants[activeArcherIndex].scores.pop();
+        return;
+      }
+
+      currentArrowsInput = [];
+
+      const uniqueSessions = getUniqueSessions();
+      const currentSessionName = uniqueSessions[activeSessionIndex];
+      const currentSessionParticipants = appConfig.participants.filter(p => (p.sesi || 'Sesi 1') === currentSessionName);
+
+      let localIdx = currentSessionParticipants.findIndex(p => appConfig.participants.indexOf(p) === activeArcherIndex);
+      localIdx++;
+
+      if (localIdx < currentSessionParticipants.length) {
+        activeArcherIndex = appConfig.participants.indexOf(currentSessionParticipants[localIdx]);
+        initScoring();
+      } else {
+        currentEnd++;
+        if (currentEnd <= appConfig.totalEnd) {
+          const firstInSession = appConfig.participants.findIndex(p => (p.sesi || 'Sesi 1') === currentSessionName);
+          if (firstInSession !== -1) activeArcherIndex = firstInSession;
+          initScoring();
+        } else {
+          showSessionLeaderboard(currentSessionName);
+        }
+      }
+    }
+
+    function showSessionLeaderboard(sessionName) {
+      document.getElementById('page-scoring').style.display = 'none';
+      document.getElementById('page-leaderboard').style.display = 'block';
+
+      const headerTitle = document.querySelector('#page-leaderboard .session-info');
+      if (headerTitle) headerTitle.innerText = `HASIL AKHIR — ${sessionName.toUpperCase()}`;
+
+      const sessionParticipants = appConfig.participants.filter(p => (p.sesi || 'Sesi 1') === sessionName);
+
+      sessionParticipants.forEach(p => {
+        const stats = calculateArcherStats(p);
+        p.totalScore = stats.totalScore;
+        p.totalX = stats.totalX;
+      });
+
+      sessionParticipants.sort((a, b) =>
+        b.totalScore !== a.totalScore
+          ? b.totalScore - a.totalScore
+          : b.totalX - a.totalX
+      );
+
+      renderSessionPodium(sessionParticipants);
+      renderSessionLeaderboardTable(sessionParticipants);
+    }
+
+    async function proceedToNextSession() {
+      const uniqueSessions = getUniqueSessions();
+      activeSessionIndex++;
+      currentEnd = 1;
+
+      if (activeSessionIndex < uniqueSessions.length) {
+        const nextSessionName = uniqueSessions[activeSessionIndex];
+        const firstNextSession = appConfig.participants.findIndex(p => (p.sesi || 'Sesi 1') === nextSessionName);
+        if (firstNextSession !== -1) activeArcherIndex = firstNextSession;
+
+        document.getElementById('page-leaderboard').style.display = 'none';
+        document.getElementById('page-scoring').style.display = 'block';
+        initScoring();
+      } else {
+        await showFinalLeaderboard();
+      }
+    }
+
+    function formatXBadge(p) {
+      return `${p.totalX || 0}X`;
+    }
+
+    function renderSessionPodium(participantsList) {
+      const podiumContainer = document.getElementById('podium-container');
+      podiumContainer.innerHTML = '';
+      const isMobile = window.innerWidth <= 900;
+      const podiumOrder = isMobile ? [0, 1, 2] : [1, 0, 2];
+
+      podiumOrder.forEach(rankIdx => {
+        const p = participantsList[rankIdx];
+        if (!p) return;
+        const isRank1 = (rankIdx === 0);
+        const nameParts = (p.name || 'User').trim().split(' ').filter(n => n.length > 0);
+        const initials = nameParts.length >= 2 ? (nameParts[0][0] + nameParts[1][0]).toUpperCase() : nameParts[0][0].toUpperCase();
+
+        const box = document.createElement('div');
+        box.className = `podium-box ${isRank1 ? 'rank-1-box' : ''}`;
+        box.innerHTML = `
+          <div style="font-size: 0.75rem; font-weight:800; color: ${isRank1 ? '#d97706' : '#64748b'}; margin-bottom:4px;">#${rankIdx + 1}</div>
+          <div class="podium-avatar">${initials}</div>
+          <div class="podium-name">${p.name}</div>
+          <div class="podium-club">${p.club || 'Independen'}</div>
+          <div class="podium-score-badge">${p.totalScore} Poin (${p.totalX || 0}X)</div>
+        `;
+        podiumContainer.appendChild(box);
+      });
+    }
+
+    function renderSessionLeaderboardTable(participantsList) {
+      const tbody = document.getElementById('lb-table-body');
+      tbody.innerHTML = '';
+      participantsList.forEach((p, idx) => {
+        const tr = document.createElement('tr');
+        const globalIdx = appConfig.participants.indexOf(p);
+        tr.innerHTML = `
+          <td style="width: 12%;"><strong>#${idx + 1}</strong></td>
+          <td style="width: 34%;">
+            <strong style="color:#0f172a; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</strong>
+            <span style="font-size:0.7rem; color:#64748b; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.club || 'Independen'}</span>
+          </td>
+          <td style="text-align:center; width: 22%;"><span style="background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:6px; font-weight:800; font-size:0.75rem; white-space:nowrap;">${formatXBadge(p)}</span></td>
+          <td style="text-align:right; font-weight:800; color:#4f46e5; font-size: 0.9rem; width: 16%; white-space:nowrap;">${p.totalScore}</td>
+          <td style="text-align:center; width: 16%;"><button type="button" class="btn-detail-icon" onclick="openDetailModal(${globalIdx})"><i class="fa-solid fa-list"></i> Detail</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function showFinalLeaderboard() {
+      const headerTitle = document.querySelector('#page-leaderboard .session-info');
+      if (headerTitle) headerTitle.innerText = `HASIL AKHIR GABUNGAN (SEMUA SESI)`;
+
+      appConfig.participants.forEach(p => {
+        const stats = calculateArcherStats(p);
+        p.totalScore = stats.totalScore;
+        p.totalX = stats.totalX;
+      });
+
+      appConfig.participants.sort((a, b) =>
+        b.totalScore !== a.totalScore
+          ? b.totalScore - a.totalScore
+          : b.totalX - a.totalX
+      );
+
+      await saveToHistory();
+
+      const podiumContainer = document.getElementById('podium-container');
+      podiumContainer.innerHTML = '';
+      const isMobile = window.innerWidth <= 900;
+      const podiumOrder = isMobile ? [0, 1, 2] : [1, 0, 2];
+
+      podiumOrder.forEach(rankIdx => {
+        const p = appConfig.participants[rankIdx];
+        if (!p) return;
+        const isRank1 = (rankIdx === 0);
+        const nameParts = (p.name || 'User').trim().split(' ').filter(n => n.length > 0);
+        const initials = nameParts.length >= 2 ? (nameParts[0][0] + nameParts[1][0]).toUpperCase() : nameParts[0][0].toUpperCase();
+
+        const box = document.createElement('div');
+        box.className = `podium-box ${isRank1 ? 'rank-1-box' : ''}`;
+        box.innerHTML = `
+          <div style="font-size: 0.75rem; font-weight:800; color: ${isRank1 ? '#d97706' : '#64748b'}; margin-bottom:4px;">#${rankIdx + 1}</div>
+          <div class="podium-avatar">${initials}</div>
+          <div class="podium-name">${p.name}</div>
+          <div class="podium-club">${p.club || 'Independen'} • ${p.sesi || 'Sesi 1'}</div>
+          <div class="podium-score-badge">${p.totalScore} Poin (${p.totalX || 0}X)</div>
+        `;
+        podiumContainer.appendChild(box);
+      });
+
+      const tbody = document.getElementById('lb-table-body');
+      tbody.innerHTML = '';
+      appConfig.participants.forEach((p, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="width: 12%;"><strong>#${idx + 1}</strong></td>
+          <td style="width: 34%;">
+            <strong style="color:#0f172a; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</strong>
+            <span style="font-size:0.7rem; color:#64748b; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.club || 'Independen'} (${p.sesi || 'Sesi 1'})</span>
+          </td>
+          <td style="text-align:center; width: 22%;"><span style="background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:6px; font-weight:800; font-size:0.75rem; white-space:nowrap;">${formatXBadge(p)}</span></td>
+          <td style="text-align:right; font-weight:800; color:#4f46e5; font-size: 0.9rem; width: 16%; white-space:nowrap;">${p.totalScore}</td>
+          <td style="text-align:center; width: 16%;"><button type="button" class="btn-detail-icon" onclick="openDetailModal(${idx})"><i class="fa-solid fa-list"></i> Detail</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      const actionButton = document.querySelector('#page-leaderboard button.btn-save-rambahan');
+      if (actionButton) {
+        actionButton.innerHTML = `<i class="fa-solid fa-rotate-right"></i> Ulangi / Setup Baru`;
+        actionButton.onclick = () => restartToSetup();
+      }
+    }
+
+    async function saveToHistory() {
+      const activeUser = getActiveUser();
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+      const firebaseParticipants = convertScoresToFirebase(appConfig.participants);
+
+      const newHistoryItem = {
+        ownerEmail: String(activeUser.email || '').trim().toLowerCase(),
+        eventName: appConfig.eventName || 'Sesi Latihan Panahan',
+        location: appConfig.location || 'Lapangan Panahan',
+        date: dateStr,
+        busur: appConfig.busur,
+        jarak: appConfig.jarak,
+        arrowCount: appConfig.arrowCount,
+        totalEnd: appConfig.totalEnd,
+        participants: firebaseParticipants,
+        createdAt: serverTimestamp()
+      };
+
+      try {
+        await addDoc(collection(db, "history"), newHistoryItem);
+      } catch (error) {
+        console.error("Gagal menyimpan riwayat:", error);
+      }
+    }
+
+    function switchRole(role) {
+      if (role === 'admin') window.location.href = 'pendaftaran.html';
+      else if (role === 'display') window.location.href = 'display.html';
+      else if (role === 'scorer') window.location.href = 'scoring.html';
+    }
+
+    function openDetailModal(pIdx) {
+      const p = appConfig.participants[pIdx];
+      document.getElementById('modal-archer-title').innerText = `Rincian: ${p.name}`;
+      const listContainer = document.getElementById('modal-end-list');
+      listContainer.innerHTML = '';
+      if (!p.scores || p.scores.length === 0) {
+        listContainer.innerHTML = `<p style="font-size:0.85rem; color:#64748b; text-align:center;">Belum ada data rambahan.</p>`;
+      } else {
+        p.scores.forEach((endArr, eIdx) => {
+          const arrows = Array.isArray(endArr) ? endArr : (endArr.arrows || []);
+          let endSum = 0;
+          arrows.forEach(code => { endSum += getScoreNumericValue(code); });
+          const formattedArrows = arrows.map(code => formatScoreLabel(code)).join(' • ');
+          const row = document.createElement('div');
+          row.className = 'end-row';
+          row.innerHTML = `<div class="end-label">End ${eIdx + 1}</div><div class="end-dots">${formattedArrows}</div><div class="end-total">${endSum} Poin</div>`;
+          listContainer.appendChild(row);
+        });
+      }
+      document.getElementById('modal-detail').classList.add('active');
+    }
+
+    function closeDetailModal() { document.getElementById('modal-detail').classList.remove('active'); }
+
+    function restartToSetup() {
+      const accountKey = getAccountKey();
+      const docRef = doc(db, "sessions", activeSessionDocId);
+      updateDoc(docRef, { status: "completed", activeLiveInput: null }).then(() => {
+        sessionStorage.removeItem(`archeryConfig_${accountKey}`);
+        localStorage.removeItem(`archeryConfig_${accountKey}`);
+        localStorage.removeItem('archeryConfig');
+        window.location.replace('home.html');
+      }).catch((err) => {
+        console.error("Gagal update status sesi:", err);
+        sessionStorage.removeItem(`archeryConfig_${accountKey}`);
+        localStorage.removeItem(`archeryConfig_${accountKey}`);
+        localStorage.removeItem('archeryConfig');
+        window.location.replace('home.html');
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", async function () {
+      syncAdminNavAccess();
+      loadActiveUserProfile();
+
+      const path = window.location.pathname;
+      let currentRole = 'scorer';
+      if (path.includes('display.html')) currentRole = 'display';
+      else if (path.includes('scoring.html')) currentRole = 'scorer';
+      else if (path.includes('pendaftaran.html') || path.includes('home.html')) currentRole = 'admin';
+
+      const deskPicker = document.getElementById('app-role-picker-desktop');
+      const mobPicker = document.getElementById('app-role-picker-mobile');
+      if (deskPicker) deskPicker.value = currentRole;
+      if (mobPicker) mobPicker.value = currentRole;
+
+      await loadSessionFromFirebase();
+    });
+
+    window.toggleMobileSidebar = toggleMobileSidebar;
+    window.switchInputMode = switchInputMode;
+    window.inputScore = inputScore;
+    window.undoScore = undoScore;
+    window.nextTurnOrRambahan = nextTurnOrRambahan;
+    window.proceedToNextSession = proceedToNextSession;
+    window.openDetailModal = openDetailModal;
+    window.closeDetailModal = closeDetailModal;
+    window.openEditEndModal = openEditEndModal;
+    window.closeEditEndModal = closeEditEndModal;
+    window.saveEditedEnd = saveEditedEnd;
+    window.deleteEndDirectly = deleteEndDirectly;
+    window.deleteEndFromModal = deleteEndFromModal;
+    window.restartToSetup = restartToSetup;
+    window.switchRole = switchRole;
+    window.handleVirtualTargetClick = handleVirtualTargetClick;
+    window.zoomTarget = zoomTarget;
+    window.resetTargetView = resetTargetView;
+  </script>
+</body>
+
+</html>
