@@ -258,7 +258,7 @@
     </div>
 
     <div style="font-size: 0.75rem; color: #94a3b8; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px;">
-      <p>Copyright &copy; 2026 &bull; Bela</p>
+      <p>Copyright &copy; 2026 &bull; Mela Aulia Syarifah</p>
     </div>
   </aside>
 
@@ -420,18 +420,35 @@
     let lastRenderedHash = '';
     let crudMode = 'create';
 
-    function isAdminAccountActive() {
-      try {
-        const user = JSON.parse(localStorage.getItem('activeArcheryUser') || 'null');
-        return Boolean(user && String(user.role || '').toLowerCase() === 'admin');
-      } catch (e) {
-        return false;
+    function getActiveUser() {
+      const rawTab = sessionStorage.getItem('activeArcheryUser');
+      if (rawTab) {
+        try {
+          return JSON.parse(rawTab);
+        } catch (e) {}
       }
+      const rawLocal = localStorage.getItem('activeArcheryUser');
+      if (rawLocal) {
+        try {
+          const parsed = JSON.parse(rawLocal);
+          sessionStorage.setItem('activeArcheryUser', JSON.stringify(parsed));
+          return parsed;
+        } catch (e) {}
+      }
+      return null;
+    }
+
+    function isAdminAccountActive() {
+      const user = getActiveUser();
+      if (!user) return false;
+      const role = String(user.role || '').trim().toLowerCase();
+      const email = String(user.email || '').trim().toLowerCase();
+      return role === 'admin' || email === 'mimin@gmail.com';
     }
 
     function applyAdminAccessUI() {
       const isAdmin = isAdminAccountActive();
-      const user = JSON.parse(localStorage.getItem('activeArcheryUser') || 'null');
+      const user = getActiveUser();
 
       const desktopNav = document.getElementById('desktop-nav-links');
       const hamburgerBtn = document.getElementById('hamburger-btn');
@@ -468,6 +485,7 @@
 
     function logoutAdminAccount() {
       if (!confirm('Keluar dari akun admin dan kembali ke tampilan Umum?')) return;
+      sessionStorage.removeItem('activeArcheryUser');
       localStorage.removeItem('activeArcheryUser');
       applyAdminAccessUI();
     }
