@@ -387,13 +387,16 @@
   </div>
 
   <footer class="desktop-footer" style="background: #222; color: white; text-align: center; padding: 20px; margin-top: 50px;">
-    <p>Copyright &copy; 2026 &bull; Mela Aulia Syarifah</p>
+    <p>Copyright &copy; 2026 &bull; Mela Aulia Syarifah/p>
   </footer>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, doc, getDoc, updateDoc, serverTimestamp, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+    // ==========================================
+    // KONFIGURASI FIREBASE (GANTI DENGAN MILIKMU)
+    // ==========================================
     const firebaseConfig = {
       apiKey: "AIzaSyBO7QmIO80laPQUqKj80C-QZ74ZHPK6WJA",
       authDomain: "scoringptu.firebaseapp.com",
@@ -420,9 +423,7 @@
     function getActiveUser() {
       const rawTab = sessionStorage.getItem('activeArcheryUser');
       if (rawTab) {
-        try {
-          return JSON.parse(rawTab);
-        } catch (e) {}
+        try { return JSON.parse(rawTab); } catch (e) {}
       }
       const rawLocal = localStorage.getItem('activeArcheryUser');
       if (rawLocal) {
@@ -961,6 +962,9 @@
       await deleteEndDirectly(pIdx, eIdx);
     }
 
+    // ==========================================
+    // FUNGSI UTAMA PERPINDAHAN GILIRAN
+    // ==========================================
     async function nextTurnOrRambahan() {
       if (!appConfig) return;
       if (currentArrowsInput.length < appConfig.arrowCount) {
@@ -974,7 +978,13 @@
       if (!Array.isArray(appConfig.participants[activeArcherIndex].scores)) {
         appConfig.participants[activeArcherIndex].scores = [];
       }
-      appConfig.participants[activeArcherIndex].scores.push(plainValues);
+      
+      // Pastikan array scores punya slot untuk currentEnd-1 (indeks array mulai 0)
+      while (appConfig.participants[activeArcherIndex].scores.length < currentEnd - 1) {
+        appConfig.participants[activeArcherIndex].scores.push([]);
+      }
+      appConfig.participants[activeArcherIndex].scores[currentEnd - 1] = plainValues;
+      
       appConfig.activeLiveInput = null;
 
       const firebaseParticipants = convertScoresToFirebase(appConfig.participants);
@@ -998,21 +1008,39 @@
       const currentSessionName = uniqueSessions[activeSessionIndex];
       const currentSessionParticipants = appConfig.participants.filter(p => (p.sesi || 'Sesi 1') === currentSessionName);
 
-      let localIdx = currentSessionParticipants.findIndex(p => appConfig.participants.indexOf(p) === activeArcherIndex);
-      localIdx++;
+      // Cari peserta yang BELUM mengisi rambahan di currentEnd
+      let nextArcherIdx = -1;
+      
+      for (let i = 0; i < currentSessionParticipants.length; i++) {
+        const p = currentSessionParticipants[i];
+        const globalIdx = appConfig.participants.indexOf(p);
+        
+        // Cek apakah peserta ini belum punya skor untuk currentEnd (indeks currentEnd - 1)
+        if (!p.scores || p.scores.length < currentEnd || p.scores[currentEnd - 1] === undefined || p.scores[currentEnd - 1].length === 0) {
+          if (globalIdx !== activeArcherIndex) {
+            nextArcherIdx = globalIdx;
+            break;
+          }
+        }
+      }
 
-      if (localIdx < currentSessionParticipants.length) {
-        activeArcherIndex = appConfig.participants.indexOf(currentSessionParticipants[localIdx]);
-        initScoring();
-      } else {
-        currentEnd++;
-        if (currentEnd <= appConfig.totalEnd) {
-          const firstInSession = appConfig.participants.findIndex(p => (p.sesi || 'Sesi 1') === currentSessionName);
-          if (firstInSession !== -1) activeArcherIndex = firstInSession;
+      // Jika tidak ada peserta lain yang belum mengisi di currentEnd ini, cek apakah kita perlu naik ke end berikutnya
+      if (nextArcherIdx === -1) {
+        // Cek apakah masih ada peserta yang belum mengisi end berikutnya
+        if (currentEnd < appConfig.totalEnd) {
+          currentEnd++;
+          // Cari peserta pertama di sesi ini
+          const firstInSession = appConfig.participants.indexOf(currentSessionParticipants[0]);
+          activeArcherIndex = firstInSession;
           initScoring();
         } else {
+          // Semua rambahan selesai, tampilkan leaderboard
           showSessionLeaderboard(currentSessionName);
         }
+      } else {
+        // Ada peserta lain yang belum mengisi, pindah ke dia
+        activeArcherIndex = nextArcherIdx;
+        initScoring();
       }
     }
 
