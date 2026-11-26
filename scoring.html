@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 
@@ -404,7 +405,7 @@
       storageBucket: "scoringptu.firebasestorage.app",
       messagingSenderId: "790472578115",
       appId: "1:790472578115:web:0f4d1395bc484686c9f0f6",
-      measurementId: "G-Z6TL4KDNJJ"   
+      measurementId: "G-Z6TL4KDNJJ"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -783,147 +784,77 @@
     scheduleLiveDraftSync(currentArrowsInput.length === 0);
   }
 
-function renderAllParticipantsSummary() {
-  const gridContainer = document.getElementById('participants-summary-grid');
-  if (!gridContainer || !appConfig || !Array.isArray(appConfig.participants)) return;
-  gridContainer.innerHTML = '';
+  function renderAllParticipantsSummary() {
+    const gridContainer = document.getElementById('participants-summary-grid');
+    if (!gridContainer || !appConfig || !Array.isArray(appConfig.participants)) return;
+    gridContainer.innerHTML = '';
 
-  // Ambil data inputan sementara dari Firebase
-  const liveInput = appConfig.activeLiveInput;
+    appConfig.participants.forEach((p, pIdx) => {
+      let totalPoin = 0;
+      let totalXCount = 0;
+      let endRowsHTML = '';
 
-  appConfig.participants.forEach((p, pIdx) => {
-    let totalPoin = 0;
-    let totalXCount = 0;
-    let endRowsHTML = '';
+      (p.scores || []).forEach((endArr, eIdx) => {
+        const arrows = Array.isArray(endArr) ? endArr : (endArr.arrows || []);
+        let endSum = 0;
+        arrows.forEach(code => {
+          endSum += getScoreNumericValue(code);
+          if (code === 'X' || code === 'X_WBN') totalXCount += 1;
+        });
+        totalPoin += endSum;
 
-    // 1. Render End yang sudah DISIMPAN
-    (p.scores || []).forEach((endArr, eIdx) => {
-      const arrows = Array.isArray(endArr) ? endArr : (endArr.arrows || []);
-      let endSum = 0;
-      arrows.forEach(code => {
-        endSum += getScoreNumericValue(code);
-        if (code === 'X' || code === 'X_WBN') totalXCount += 1;
+        const formattedArrows = arrows.map(code => formatScoreLabel(code)).join(' • ');
+        endRowsHTML += `
+          <div class="end-row">
+            <div class="end-label">End ${eIdx + 1}</div>
+            <div class="end-dots">${formattedArrows}</div>
+            <span class="end-total">${endSum} Poin</span>
+            <div class="crud-actions">
+              <button type="button" class="btn-crud-edit" title="Edit End ${eIdx + 1}" onclick="openEditEndModal(${pIdx}, ${eIdx})"><i class="fa-solid fa-pen"></i></button>
+              <button type="button" class="btn-crud-delete" title="Hapus End ${eIdx + 1}" onclick="deleteEndDirectly(${pIdx}, ${eIdx})"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>
+        `;
       });
-      totalPoin += endSum;
 
-      const formattedArrows = arrows.map(code => formatScoreLabel(code)).join(' • ');
-      endRowsHTML += `
-        <div class="end-row">
-          <div class="end-label">End ${eIdx + 1}</div>
-          <div class="end-dots">${formattedArrows}</div>
-          <span class="end-total">${endSum} Poin</span>
-          <div class="crud-actions">
-            <button type="button" class="btn-crud-edit" title="Edit End ${eIdx + 1}" onclick="openEditEndModal(${pIdx}, ${eIdx})"><i class="fa-solid fa-pen"></i></button>
-            <button type="button" class="btn-crud-delete" title="Hapus End ${eIdx + 1}" onclick="deleteEndDirectly(${pIdx}, ${eIdx})"><i class="fa-solid fa-trash"></i></button>
+      // Menampilkan inputan sementara (sedang diketik)
+      if (pIdx === activeArcherIndex && currentArrowsInput.length > 0) {
+        const activeVals = currentArrowsInput.map(item => typeof item === 'object' ? item.val : item);
+        let activeSum = 0;
+        activeVals.forEach(code => {
+          activeSum += getScoreNumericValue(code);
+          if (code === 'X' || code === 'X_WBN') totalXCount += 1;
+        });
+        totalPoin += activeSum;
+        const formattedActive = activeVals.map(c => formatScoreLabel(c)).join(' • ');
+        endRowsHTML += `
+          <div class="end-row draft-row">
+            <div class="end-label">✒️ End ${currentEnd}</div>
+            <div class="end-dots">✒️ ${formattedActive}</div>
+            <span class="end-total">${activeSum} Poin</span>
+          </div>
+        `;
+      }
+
+      const card = document.createElement('div');
+      card.className = `participant-summary-card ${pIdx === activeArcherIndex ? 'active-card' : ''}`;
+      card.innerHTML = `
+        <div class="p-card-header">
+          <div>
+            <div class="p-card-name">${p.name} ${pIdx === activeArcherIndex ? '🎯 (Aktif)' : ''}</div>
+            <div class="p-card-club">${p.club || 'Independen'} • <span style="color:#4f46e5; font-weight:700;">${p.bantalan || 'Bantalan 1'}</span> (${p.sesi || 'Sesi 1'})</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="background:#fef3c7; color:#b45309; padding:6px 10px; border-radius:10px; font-weight:800; font-size:0.8rem;">${totalXCount}X</span>
+            <div class="p-card-total-badge">Total: ${totalPoin} Poin</div>
           </div>
         </div>
+        <div class="end-history-list">${endRowsHTML || '<p style="font-size:0.75rem; color:#64748b; font-style:italic; text-align:center;">Belum ada rambahan tersimpan.</p>'}</div>
       `;
+      gridContainer.appendChild(card);
     });
+  }
 
-    // 2. Render End yang SEDANG DIINPUT (Draft)
-    // Cek apakah ada liveInput dari Firebase untuk peserta ini
-    const isThisArcherActiveDraft = liveInput && liveInput.archerIndex === pIdx && liveInput.arrows && liveInput.arrows.length > 0;
-    
-    // ATAU cek apakah ini peserta yang sedang aktif di layar kita sendiri (jika kita yang mengetik)
-    const isMyLocalActiveDraft = (pIdx === activeArcherIndex && currentArrowsInput.length > 0);
-
-    if (isThisArcherActiveDraft || isMyLocalActiveDraft) {
-      // Prioritaskan data lokal jika kita yang sedang mengetik, jika tidak pakai data dari Firebase
-      const activeVals = isMyLocalActiveDraft 
-        ? currentArrowsInput.map(item => typeof item === 'object' ? item.val : item)
-        : liveInput.arrows;
-
-      let activeSum = 0;
-      activeVals.forEach(code => {
-        activeSum += getScoreNumericValue(code);
-        if (code === 'X' || code === 'X_WBN') totalXCount += 1;
-      });
-      
-      totalPoin += activeSum; // Tambahkan ke total poin keseluruhan
-      
-      const formattedActive = activeVals.map(c => formatScoreLabel(c)).join(' • ');
-      
-      // Tampilkan sebagai Draft Oranye
-      endRowsHTML += `
-        <div class="end-row draft-row">
-          <div class="end-label">✒️ End ${p.scores.length + 1}</div>
-          <div class="end-dots">✒️ ${formattedActive}</div>
-          <span class="end-total">${activeSum} Poin</span>
-        </div>
-      `;
-    }
-
-    const card = document.createElement('div');
-    card.className = `participant-summary-card ${pIdx === activeArcherIndex ? 'active-card' : ''}`;
-    card.innerHTML = `
-      <div class="p-card-header">
-        <div>
-          <div class="p-card-name">${p.name} ${pIdx === activeArcherIndex ? '🎯 (Aktif)' : ''}</div>
-          <div class="p-card-club">${p.club || 'Independen'} • <span style="color:#4f46e5; font-weight:700;">${p.bantalan || 'Bantalan 1'}</span> (${p.sesi || 'Sesi 1'})</div>
-        </div>
-        <div style="display:flex; align-items:center; gap:6px;">
-          <span style="background:#fef3c7; color:#b45309; padding:6px 10px; border-radius:10px; font-weight:800; font-size:0.8rem;">${totalXCount}X</span>
-          <div class="p-card-total-badge">Total: ${totalPoin} Poin</div>
-        </div>
-      </div>
-      <div class="end-history-list">${endRowsHTML || '<p style="font-size:0.75rem; color:#64748b; font-style:italic; text-align:center;">Belum ada rambahan tersimpan.</p>'}</div>
-    `;
-    gridContainer.appendChild(card);
-  });
-    }
-    
-    // 2. Render End yang SEDANG DIINPUT (Draft)
-    // Cek apakah ada liveInput dari Firebase untuk peserta ini
-    const isThisArcherActiveDraft = liveInput && liveInput.archerIndex === pIdx && liveInput.arrows && liveInput.arrows.length > 0;
-    
-    // ATAU cek apakah ini peserta yang sedang aktif di layar kita sendiri (jika kita yang mengetik)
-    const isMyLocalActiveDraft = (pIdx === activeArcherIndex && currentArrowsInput.length > 0);
-
-    if (isThisArcherActiveDraft || isMyLocalActiveDraft) {
-      // Prioritaskan data lokal jika kita yang sedang mengetik, jika tidak pakai data dari Firebase
-      const activeVals = isMyLocalActiveDraft 
-        ? currentArrowsInput.map(item => typeof item === 'object' ? item.val : item)
-        : liveInput.arrows;
-
-      let activeSum = 0;
-      activeVals.forEach(code => {
-        activeSum += getScoreNumericValue(code);
-        if (code === 'X' || code === 'X_WBN') totalXCount += 1;
-      });
-      
-      totalPoin += activeSum; // Tambahkan ke total poin keseluruhan
-      
-      const formattedActive = activeVals.map(c => formatScoreLabel(c)).join(' • ');
-      
-      // Tampilkan sebagai Draft Oranye
-      endRowsHTML += `
-        <div class="end-row draft-row">
-          <div class="end-label">✒️ End ${p.scores.length + 1}</div>
-          <div class="end-dots">✒️ ${formattedActive}</div>
-          <span class="end-total">${activeSum} Poin</span>
-        </div>
-      `;
-    }
-
-    const card = document.createElement('div');
-    card.className = `participant-summary-card ${pIdx === activeArcherIndex ? 'active-card' : ''}`;
-    card.innerHTML = `
-      <div class="p-card-header">
-        <div>
-          <div class="p-card-name">${p.name} ${pIdx === activeArcherIndex ? '🎯 (Aktif)' : ''}</div>
-          <div class="p-card-club">${p.club || 'Independen'} • <span style="color:#4f46e5; font-weight:700;">${p.bantalan || 'Bantalan 1'}</span> (${p.sesi || 'Sesi 1'})</div>
-        </div>
-        <div style="display:flex; align-items:center; gap:6px;">
-          <span style="background:#fef3c7; color:#b45309; padding:6px 10px; border-radius:10px; font-weight:800; font-size:0.8rem;">${totalXCount}X</span>
-          <div class="p-card-total-badge">Total: ${totalPoin} Poin</div>
-        </div>
-      </div>
-      <div class="end-history-list">${endRowsHTML || '<p style="font-size:0.75rem; color:#64748b; font-style:italic; text-align:center;">Belum ada rambahan tersimpan.</p>'}</div>
-    `;
-    gridContainer.appendChild(card);
-  });
-}
-    
   const SCORE_OPTIONS = [
     { value: 'X', label: 'X(10)' },
     { value: 'X_WBN', label: 'X(6)' },
