@@ -233,109 +233,113 @@
     }
 
     function renderLiveDisplay(config) {
-      if (!config || !config.participants || config.participants.length === 0) {
-        showEmptyState("Sesi tidak memiliki peserta.");
-        return;
-      }
+  if (!config || !config.participants || config.participants.length === 0) {
+    showEmptyState("Sesi tidak memiliki peserta.");
+    return;
+  }
 
-      document.getElementById('live-event-title').innerText = config.eventName || 'Sesi Latihan Panahan';
-      document.getElementById('live-event-meta').innerText = `${config.busur} • ${config.jarak} • ${config.totalEnd} Rambahan (${config.arrowCount} Arrow)`;
-      document.getElementById('live-event-location').innerText = config.location || 'Lapangan Utama';
+  document.getElementById('live-event-title').innerText = config.eventName || 'Sesi Latihan Panahan';
+  document.getElementById('live-event-meta').innerText = `${config.busur} • ${config.jarak} • ${config.totalEnd} Rambahan (${config.arrowCount} Arrow)`;
+  document.getElementById('live-event-location').innerText = config.location || 'Lapangan Utama';
 
-      let list = config.participants.map((p, pIdx) => {
-        let totalScore = 0;
-        let totalX = 0;
-        let endDetailsHTML = '';
+  // Ambil array draft dari Firebase
+  const drafts = config.activeLiveDrafts || [];
 
-        if (p.scores && Array.isArray(p.scores) && p.scores.length > 0) {
-          p.scores.forEach((endObj, eIdx) => {
-            let endSum = 0;
-            const arrows = Array.isArray(endObj) ? endObj : (endObj.arrows || []);
-            arrows.forEach(code => {
-              endSum += getScoreNumericValue(code);
-              if (code === 'X' || code === 'X_WBN') totalX += 1;
-            });
-            totalScore += endSum;
+  let list = config.participants.map((p, pIdx) => {
+    let totalScore = 0;
+    let totalX = 0;
+    let endDetailsHTML = '';
 
-            const formattedArrows = arrows.map(c => c === 'X_WBN' ? 'X(WBN)' : (c === 'X' ? 'X(10)' : c)).join(' • ');
-            endDetailsHTML += `<div style="font-size:0.75rem; color:#64748b; font-weight:600;">End ${eIdx + 1}: ${formattedArrows} (${endSum} Poin)</div>`;
-          });
-        }
+    // 1. Hitung skor dari rambahan yang sudah disimpan
+    if (p.scores && Array.isArray(p.scores) && p.scores.length > 0) {
+      p.scores.forEach((endObj, eIdx) => {
+        let endSum = 0;
+        const arrows = Array.isArray(endObj) ? endObj : (endObj.arrows || []);
+        arrows.forEach(code => {
+          endSum += getScoreNumericValue(code);
+          if (code === 'X' || code === 'X_WBN') totalX += 1;
+        });
+        totalScore += endSum;
 
-        let activeInputDisplay = '';
-        if (config.activeLiveInput && config.activeLiveInput.archerIndex === pIdx) {
-          const currentInputArr = config.activeLiveInput.arrows;
-          if (currentInputArr && currentInputArr.length > 0) {
-            let activeSum = 0;
-            currentInputArr.forEach(code => {
-              activeSum += getScoreNumericValue(code);
-              if (code === 'X' || code === 'X_WBN') totalX += 1;
-            });
-            totalScore += activeSum;
-
-            const formattedActive = currentInputArr.map(c => c === 'X_WBN' ? 'X(WBN)' : (c === 'X' ? 'X(10)' : c)).join(' • ');
-
-            activeInputDisplay = `
-              <div style="font-size:0.8rem; color:#ea580c; font-weight:800; margin-top:6px; background:#fff7ed; padding:4px 8px; border-radius:6px; border:1px solid #fdba74; display:inline-block;">
-                ✒️ Sedang Diinput: ${formattedActive} (${activeSum} Poin)
-              </div>
-            `;
-          }
-        }
-
-        return { ...p, totalScore, totalX, endDetailsHTML, activeInputDisplay };
-      });
-
-      list.sort((a, b) => b.totalScore - a.totalScore || b.totalX - a.totalX);
-
-      const podium = document.getElementById('display-podium');
-      podium.innerHTML = '';
-      const order = [1, 0, 2];
-
-      order.forEach(rankIdx => {
-        const p = list[rankIdx];
-        if (!p) return;
-        const isRank1 = (rankIdx === 0);
-        const nameParts = (p.name || 'User').trim().split(' ').filter(n => n.length > 0);
-        const initials = nameParts.length >= 2 ? (nameParts[0][0] + nameParts[1][0]).toUpperCase() : nameParts[0][0].toUpperCase();
-
-        const box = document.createElement('div');
-        box.className = `podium-box ${isRank1 ? 'rank-1-box' : ''}`;
-        box.innerHTML = `
-          <div style="font-size: 0.75rem; font-weight:800; color: ${isRank1 ? '#d97706' : '#64748b'}; margin-bottom:4px;">#${rankIdx + 1}</div>
-          <div class="podium-avatar">${initials}</div>
-          <div class="podium-name">${p.name}</div>
-          <div style="font-size:0.75rem; color:#64748b;">${p.club || 'Independen'}</div>
-          <div class="podium-score">${p.totalScore} Poin</div>
-        `;
-        podium.appendChild(box);
-      });
-
-      const tbody = document.getElementById('display-table-body');
-      tbody.innerHTML = '';
-      list.forEach((p, idx) => {
-        let displayDetail = '';
-        if (p.activeInputDisplay || p.endDetailsHTML) {
-          displayDetail = `<div style="margin-top: 4px; display: flex; flex-direction: column; gap: 2px;">${p.endDetailsHTML}${p.activeInputDisplay}</div>`;
-        } else {
-          displayDetail = `<br><span style="font-size:0.75rem; color:#94a3b8; font-style:italic;">Belum ada panahan</span>`;
-        }
-
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><strong>#${idx + 1}</strong></td>
-          <td>
-            <strong style="color:#0f172a;">${p.name}</strong>
-            ${displayDetail}
-          </td>
-          <td><span style="color:#64748b;">${p.club || 'Independen'}</span></td>
-          <td style="text-align:center;"><span style="background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:6px; font-weight:800; font-size:0.8rem;">${p.totalX}X</span></td>
-          <td style="text-align:right; font-weight:800; color:#4f46e5; font-size: 1.05rem; vertical-align: top;">${p.totalScore} Poin</td>
-        `;
-        tbody.appendChild(tr);
+        const formattedArrows = arrows.map(c => c === 'X_WBN' ? 'X(WBN)' : (c === 'X' ? 'X(10)' : c)).join(' • ');
+        endDetailsHTML += `<div style="font-size:0.75rem; color:#64748b; font-weight:600;">End ${eIdx + 1}: ${formattedArrows} (${endSum} Poin)</div>`;
       });
     }
 
+    // 2. Cari draft untuk peserta ini (jika ada yang sedang mengetik)
+    let activeInputDisplay = '';
+    const draftForThisArcher = drafts.find(d => d.archerIndex === pIdx);
+    
+    if (draftForThisArcher && draftForThisArcher.arrows && draftForThisArcher.arrows.length > 0) {
+      let activeSum = 0;
+      draftForThisArcher.arrows.forEach(code => {
+        activeSum += getScoreNumericValue(code);
+        if (code === 'X' || code === 'X_WBN') totalX += 1;
+      });
+      totalScore += activeSum;
+
+      const formattedActive = draftForThisArcher.arrows.map(c => c === 'X_WBN' ? 'X(WBN)' : (c === 'X' ? 'X(10)' : c)).join(' • ');
+
+      activeInputDisplay = `
+        <div style="font-size:0.8rem; color:#ea580c; font-weight:800; margin-top:6px; background:#fff7ed; padding:4px 8px; border-radius:6px; border:1px solid #fdba74; display:inline-block;">
+          ✒️ Sedang Diinput: ${formattedActive} (${activeSum} Poin)
+        </div>
+      `;
+    }
+
+    return { ...p, totalScore, totalX, endDetailsHTML, activeInputDisplay };
+  });
+
+  list.sort((a, b) => b.totalScore - a.totalScore || b.totalX - a.totalX);
+
+  const podium = document.getElementById('display-podium');
+  podium.innerHTML = '';
+  const order = [1, 0, 2];
+
+  order.forEach(rankIdx => {
+    const p = list[rankIdx];
+    if (!p) return;
+    const isRank1 = (rankIdx === 0);
+    const nameParts = (p.name || 'User').trim().split(' ').filter(n => n.length > 0);
+    const initials = nameParts.length >= 2 ? (nameParts[0][0] + nameParts[1][0]).toUpperCase() : nameParts[0][0].toUpperCase();
+
+    const box = document.createElement('div');
+    box.className = `podium-box ${isRank1 ? 'rank-1-box' : ''}`;
+    box.innerHTML = `
+      <div style="font-size: 0.75rem; font-weight:800; color: ${isRank1 ? '#d97706' : '#64748b'}; margin-bottom:4px;">#${rankIdx + 1}</div>
+      <div class="podium-avatar">${initials}</div>
+      <div class="podium-name">${p.name}</div>
+      <div style="font-size:0.75rem; color:#64748b;">${p.club || 'Independen'}</div>
+      <div class="podium-score">${p.totalScore} Poin</div>
+    `;
+    podium.appendChild(box);
+  });
+
+  const tbody = document.getElementById('display-table-body');
+  tbody.innerHTML = '';
+  list.forEach((p, idx) => {
+    let displayDetail = '';
+    if (p.activeInputDisplay || p.endDetailsHTML) {
+      displayDetail = `<div style="margin-top: 4px; display: flex; flex-direction: column; gap: 2px;">${p.endDetailsHTML}${p.activeInputDisplay}</div>`;
+    } else {
+      displayDetail = `<br><span style="font-size:0.75rem; color:#94a3b8; font-style:italic;">Belum ada panahan</span>`;
+    }
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>#${idx + 1}</strong></td>
+      <td>
+        <strong style="color:#0f172a;">${p.name}</strong>
+        ${displayDetail}
+      </td>
+      <td><span style="color:#64748b;">${p.club || 'Independen'}</span></td>
+      <td style="text-align:center;"><span style="background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:6px; font-weight:800; font-size:0.8rem;">${p.totalX}X</span></td>
+      <td style="text-align:right; font-weight:800; color:#4f46e5; font-size: 1.05rem; vertical-align: top;">${p.totalScore} Poin</td>
+    `;
+    tbody.appendChild(tr);
+  });
+    }
+    
     document.addEventListener("DOMContentLoaded", function() {
       syncAdminNavAccess();
       startLiveDisplay();
