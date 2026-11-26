@@ -551,14 +551,43 @@
   // ==========================================
   // FUNGSI UI & LOGIKA
   // ==========================================
-  function syncLiveDraftToFirebase(forceNull = false) {
-    if (!activeSessionDocId || !appConfig) return;
-    const payload = forceNull ? null : {
-      archerIndex: activeArcherIndex,
-      endNumber: currentEnd,
-      arrows: currentArrowsInput.map(i => typeof i === 'object' ? i.val : i),
-      sum: currentArrowsInput.reduce((acc, item) => acc + getScoreNumericValue(typeof item === 'object' ? item.val : item), 0)
-    };
+  async function syncLiveDraftToFirebase(forceNull = false) {
+  if (!activeSessionDocId || !appConfig) return;
+  
+  // Ambil data panitia saat ini
+  const currentDraft = {
+    archerIndex: activeArcherIndex,
+    endNumber: currentEnd,
+    arrows: currentArrowsInput.map(i => typeof i === 'object' ? i.val : i),
+    sum: currentArrowsInput.reduce((acc, item) => acc + getScoreNumericValue(typeof item === 'object' ? item.val : item), 0),
+    updatedAt: Date.now()
+  };
+
+  try {
+    const docRef = doc(db, "sessions", activeSessionDocId);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      let drafts = data.activeLiveDrafts || []; // Ambil array draft yang sudah ada
+
+      // Hapus draft lama dari panitia ini (jika ada)
+      drafts = drafts.filter(d => d.archerIndex !== activeArcherIndex);
+
+      // Jika forceNull = false DAN ada isinya, tambahkan draft baru
+      if (!forceNull && currentDraft.arrows.length > 0) {
+        drafts.push(currentDraft);
+      }
+
+      await updateDoc(docRef, {
+        activeLiveDrafts: drafts,
+        updatedAt: serverTimestamp()
+      });
+    }
+  } catch (err) {
+    console.warn("Sinkronisasi draft skor tertunda:", err.message);
+  }
+  }
     
     appConfig.activeLiveInput = payload;
     const docRef = doc(db, "sessions", activeSessionDocId);
