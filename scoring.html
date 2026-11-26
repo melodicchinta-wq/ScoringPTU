@@ -391,929 +391,920 @@
   </footer>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, doc, getDoc, updateDoc, serverTimestamp, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, doc, onSnapshot, updateDoc, serverTimestamp, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // ==========================================
-    // KONFIGURASI FIREBASE (GANTI DENGAN MILIKMU)
-    // ==========================================
-    const firebaseConfig = {
-      apiKey: "AIzaSyBO7QmIO80laPQUqKj80C-QZ74ZHPK6WJA",
+  // ==========================================
+  // KONFIGURASI FIREBASE
+  // ==========================================
+  const firebaseConfig = {
+    apiKey: "AIzaSyBO7QmIO80laPQUqKj80C-QZ74ZHPK6WJA",
       authDomain: "scoringptu.firebaseapp.com",
       projectId: "scoringptu",
       storageBucket: "scoringptu.firebasestorage.app",
       messagingSenderId: "790472578115",
       appId: "1:790472578115:web:0f4d1395bc484686c9f0f6",
-      measurementId: "G-Z6TL4KDNJJ"
-    };
+      measurementId: "G-Z6TL4KDNJJ"   
+  };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-    let appConfig = null;
-    let activeSessionDocId = '';
-    let currentEnd = 1;
-    let activeSessionIndex = 0;
-    let activeArcherIndex = 0;
-    let currentArrowsInput = [];
-    let liveSyncTimer = null;
+  let appConfig = null;
+  let activeSessionDocId = '';
+  let currentEnd = 1;
+  let activeSessionIndex = 0;
+  let activeArcherIndex = 0;
+  let currentArrowsInput = [];
+  let liveSyncTimer = null;
+  let unsubscribeSnapshot = null; // Untuk memantau perubahan
 
-    let editingTarget = { pIdx: null, eIdx: null };
+  let editingTarget = { pIdx: null, eIdx: null };
 
-    function getActiveUser() {
-      const rawTab = sessionStorage.getItem('activeArcheryUser');
-      if (rawTab) {
-        try { return JSON.parse(rawTab); } catch (e) {}
-      }
-      const rawLocal = localStorage.getItem('activeArcheryUser');
-      if (rawLocal) {
-        try {
-          const parsed = JSON.parse(rawLocal);
-          sessionStorage.setItem('activeArcheryUser', JSON.stringify(parsed));
-          return parsed;
-        } catch (e) {}
-      }
-      return { name: 'Admin Tamu', email: 'guest@archery.com', club: 'Independen' };
+  function getActiveUser() {
+    // Ambil dari sessionStorage dulu (biar antar tab beda user bisa beda panitia)
+    const rawTab = sessionStorage.getItem('activeArcheryUser');
+    if (rawTab) {
+      try { return JSON.parse(rawTab); } catch (e) {}
     }
-
-    function getAccountKey() {
-      const activeUser = getActiveUser();
-      const cleanEmail = String(activeUser.email || 'guest@archery.com').trim().toLowerCase();
-      return cleanEmail.replace(/[^a-z0-9]/gi, '_');
+    const rawLocal = localStorage.getItem('activeArcheryUser');
+    if (rawLocal) {
+      try { return JSON.parse(rawLocal); } catch (e) {}
     }
+    return { name: 'Admin Tamu', email: 'guest@archery.com', club: 'Independen' };
+  }
 
-    function syncAdminNavAccess() {
-      const user = getActiveUser();
-      const isAdmin = Boolean(
-        user &&
-        (String(user.role || '').toLowerCase() === 'admin' ||
-         String(user.email || '').trim().toLowerCase() === 'mimin@gmail.com')
-      );
+  function getAccountKey() {
+    const activeUser = getActiveUser();
+    const cleanEmail = String(activeUser.email || 'guest@archery.com').trim().toLowerCase();
+    return cleanEmail.replace(/[^a-z0-9]/gi, '_');
+  }
 
-      const deskLink = document.getElementById('nav-public-score-desktop');
-      const mobLink = document.getElementById('nav-public-score-mobile');
+  function syncAdminNavAccess() {
+    const user = getActiveUser();
+    const isAdmin = Boolean(
+      user &&
+      (String(user.role || '').toLowerCase() === 'admin' ||
+       String(user.email || '').trim().toLowerCase() === 'mimin@gmail.com')
+    );
 
-      if (deskLink) deskLink.style.display = isAdmin ? 'inline-flex' : 'none';
-      if (mobLink) mobLink.style.display = isAdmin ? 'flex' : 'none';
-    }
+    const deskLink = document.getElementById('nav-public-score-desktop');
+    const mobLink = document.getElementById('nav-public-score-mobile');
 
-    function formatScoreLabel(code) {
-      if (code === 'X') return 'X(10)';
-      if (code === 'X_WBN') return 'X(6)';
-      return code;
-    }
+    if (deskLink) deskLink.style.display = isAdmin ? 'inline-flex' : 'none';
+    if (mobLink) mobLink.style.display = isAdmin ? 'flex' : 'none';
+  }
 
-    function getScoreNumericValue(code) {
-      if (code === 'X') return 10;
-      if (code === 'X_WBN') return 6;
-      if (code === 'M' || code === undefined || code === null) return 0;
-      return parseInt(code, 10) || 0;
-    }
+  function formatScoreLabel(code) {
+    if (code === 'X') return 'X(10)';
+    if (code === 'X_WBN') return 'X(6)';
+    return code;
+  }
 
-    function calculateArcherStats(p) {
-      let totalScore = 0, totalX = 0;
-      (p.scores || []).forEach(endArr => {
-        const arrows = Array.isArray(endArr) ? endArr : (endArr.arrows || []);
-        arrows.forEach(code => {
-          totalScore += getScoreNumericValue(code);
-          if (code === 'X' || code === 'X_WBN') totalX += 1;
-        });
+  function getScoreNumericValue(code) {
+    if (code === 'X') return 10;
+    if (code === 'X_WBN') return 6;
+    if (code === 'M' || code === undefined || code === null) return 0;
+    return parseInt(code, 10) || 0;
+  }
+
+  function calculateArcherStats(p) {
+    let totalScore = 0, totalX = 0;
+    (p.scores || []).forEach(endArr => {
+      const arrows = Array.isArray(endArr) ? endArr : (endArr.arrows || []);
+      arrows.forEach(code => {
+        totalScore += getScoreNumericValue(code);
+        if (code === 'X' || code === 'X_WBN') totalX += 1;
       });
-      return { totalScore, totalX };
-    }
-
-    function convertScoresToFirebase(participants) {
-      return (participants || []).map(p => ({
-        ...p,
-        scores: (p.scores || []).map((endArr, index) => ({
-          endIndex: index + 1,
-          arrows: Array.isArray(endArr) ? endArr : (endArr.arrows || [])
-        }))
-      }));
-    }
-
-    function convertScoresFromFirebase(participants) {
-      return (participants || []).map(p => ({
-        ...p,
-        scores: (p.scores || []).map(endObj => {
-          if (Array.isArray(endObj)) return endObj;
-          return endObj.arrows || [];
-        })
-      }));
-    }
-
-    function buildLiveDraftPayload() {
-      const arrows = currentArrowsInput.map(i => typeof i === 'object' ? i.val : i);
-      if (arrows.length === 0) return null;
-      const sum = arrows.reduce((acc, code) => acc + getScoreNumericValue(code), 0);
-      return {
-        archerIndex: activeArcherIndex,
-        endNumber: currentEnd,
-        arrows,
-        sum,
-        updatedAt: Date.now()
-      };
-    }
-
-    async function syncLiveDraftToFirebase(forceNull = false) {
-      if (!activeSessionDocId || !appConfig) return;
-      const payload = forceNull ? null : buildLiveDraftPayload();
-      appConfig.activeLiveInput = payload;
-      try {
-        const docRef = doc(db, "sessions", activeSessionDocId);
-        await updateDoc(docRef, {
-          activeLiveInput: payload,
-          updatedAt: serverTimestamp()
-        });
-      } catch (err) {
-        console.warn("Sinkronisasi draft skor tertunda:", err.message);
-      }
-    }
-
-    function scheduleLiveDraftSync(forceNull = false) {
-      clearTimeout(liveSyncTimer);
-      liveSyncTimer = setTimeout(() => {
-        syncLiveDraftToFirebase(forceNull);
-      }, 150);
-    }
-
-    const canvas = document.getElementById('targetCanvas');
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    const container = document.getElementById('canvasContainer');
-    const wrapper = document.getElementById('targetWrapper');
-    const waletImg = new Image();
-    waletImg.src = "target.jpg";
-
-    let scale = 1, posX = 0, posY = 0, isDragging = false, startX, startY;
-
-    waletImg.onload = () => {
-      canvas.width = waletImg.width;
-      canvas.height = waletImg.height;
-      drawTargetCanvas();
-      resetTargetView();
-    };
-
-    function drawTargetCanvas() {
-      if (!canvas.width || !canvas.height) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(waletImg, 0, 0);
-      currentArrowsInput.forEach((shot) => {
-        if (shot.x && shot.y) {
-          ctx.beginPath();
-          ctx.arc(shot.x, shot.y, 12, 0, 2 * Math.PI);
-          ctx.fillStyle = 'rgba(255, 0, 0, 0.85)';
-          ctx.fill();
-          ctx.lineWidth = 2;
-          ctx.strokeStyle = '#fff';
-          ctx.stroke();
-          ctx.fillStyle = '#fff';
-          ctx.font = 'bold 10px Arial';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(formatScoreLabel(shot.val), shot.x, shot.y);
-        }
-      });
-    }
-
-    function zoomTarget(factor) { scale = Math.min(Math.max(0.5, scale * factor), 4); updateTargetTransform(); }
-    function resetTargetView() {
-      if (!waletImg.width) return;
-      scale = wrapper.clientWidth / waletImg.width;
-      posX = 0; posY = 0;
-      updateTargetTransform();
-    }
-    function updateTargetTransform() { container.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`; }
-
-    wrapper.addEventListener('pointerdown', (e) => { isDragging = true; startX = e.clientX - posX; startY = e.clientY - posY; });
-    window.addEventListener('pointermove', (e) => { if (!isDragging) return; posX = e.clientX - startX; posY = e.clientY - startY; updateTargetTransform(); });
-    window.addEventListener('pointerup', () => { isDragging = false; });
-
-    canvas.addEventListener('click', (e) => {
-      if (!appConfig || currentArrowsInput.length >= appConfig.arrowCount) { alert("Arrow sudah penuh untuk rambahan ini!"); return; }
-      const rect = canvas.getBoundingClientRect();
-      const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
-      const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
-      const pixel = ctx.getImageData(clickX, clickY, 1, 1).data;
-      const scoreVal = calculateWaletScore(pixel[0], pixel[1], pixel[2], clickX, clickY);
-
-      currentArrowsInput.push({ val: scoreVal, x: clickX, y: clickY });
-      drawTargetCanvas();
-      renderArrowBoxes();
-      renderAllParticipantsSummary();
-      scheduleLiveDraftSync(false);
     });
+    return { totalScore, totalX };
+  }
 
-    function calculateWaletScore(r, g, b, x, y) {
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
-      const distance = Math.hypot(x - centerX, y - centerY);
-      if (distance > canvas.width * 0.38) return 'M';
-      if (r > 160 && g > 140 && b < 120) {
-        const centerDist = Math.hypot(x - centerX, y - (canvas.height * 0.52));
-        return centerDist < canvas.width * 0.12 ? '6' : '1';
-      }
-      if (r > 140 && g < 110 && b < 110) return '5';
-      if (r < 120 && g > 90 && b > 140) return '4';
-      if (r < 90 && g < 90 && b < 90) return '2';
-      if (r > 180 && g > 180 && b > 180) return distance > canvas.width * 0.32 ? 'M' : '3';
-      return 'M';
-    }
+  function convertScoresToFirebase(participants) {
+    return (participants || []).map(p => ({
+      ...p,
+      scores: (p.scores || []).map((endArr, index) => ({
+        endIndex: index + 1,
+        arrows: Array.isArray(endArr) ? endArr : (endArr.arrows || [])
+      }))
+    }));
+  }
 
-    function toggleMobileSidebar() { document.getElementById('mobile-sidebar').classList.toggle('active'); document.getElementById('mobile-overlay').classList.toggle('active'); }
-    function switchInputMode(mode) {
-      document.getElementById('btn-mode-keypad').classList.remove('active');
-      document.getElementById('btn-mode-target').classList.remove('active');
-      document.getElementById('btn-mode-walet').classList.remove('active');
-      document.getElementById('container-keypad').style.display = 'none';
-      document.getElementById('container-target').style.display = 'none';
-      document.getElementById('container-walet').style.display = 'none';
+  function convertScoresFromFirebase(participants) {
+    return (participants || []).map(p => ({
+      ...p,
+      scores: (p.scores || []).map(endObj => {
+        if (Array.isArray(endObj)) return endObj;
+        return endObj.arrows || [];
+      })
+    }));
+  }
 
-      if (mode === 'keypad') { document.getElementById('btn-mode-keypad').classList.add('active'); document.getElementById('container-keypad').style.display = 'grid'; }
-      else if (mode === 'target') { document.getElementById('btn-mode-target').classList.add('active'); document.getElementById('container-target').style.display = 'flex'; }
-      else if (mode === 'walet') { document.getElementById('btn-mode-walet').classList.add('active'); document.getElementById('container-walet').style.display = 'flex'; resetTargetView(); }
-    }
+  // ==========================================
+  // FUNGSI REAL-TIME (ON SNAPSHOT)
+  // ==========================================
+  function listenToSession() {
+    const accountKey = getAccountKey();
+    activeSessionDocId = `active_session_${accountKey}`;
+    
+    if (unsubscribeSnapshot) unsubscribeSnapshot();
 
-    function handleVirtualTargetClick(event) { inputScore('M'); }
-
-    function loadActiveUserProfile() {
-      const activeUser = getActiveUser();
-      document.getElementById('user-name-text').innerText = activeUser.name || 'Archer Pro';
-      document.getElementById('user-club-text').innerText = activeUser.club || 'Klub Panahan';
-      if (activeUser.name) {
-        const nameParts = activeUser.name.trim().split(' ').filter(n => n.length > 0);
-        document.getElementById('user-avatar-box').innerText = nameParts.length >= 2 ? (nameParts[0][0] + nameParts[1][0]).toUpperCase() : nameParts[0][0].toUpperCase();
-      }
-    }
-
-    async function loadSessionFromFirebase() {
-      const accountKey = getAccountKey();
-      activeSessionDocId = `active_session_${accountKey}`;
-      currentEnd = 1;
-      activeSessionIndex = 0;
-      activeArcherIndex = 0;
-      currentArrowsInput = [];
-
-      try {
-        const docRef = doc(db, "sessions", activeSessionDocId);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          const rawData = docSnap.data();
-          rawData.participants = convertScoresFromFirebase(rawData.participants);
-          appConfig = rawData;
-
-          if (appConfig.activeLiveInput && typeof appConfig.activeLiveInput.archerIndex === 'number') {
-            activeArcherIndex = appConfig.activeLiveInput.archerIndex;
-            if (appConfig.activeLiveInput.endNumber) {
-              currentEnd = appConfig.activeLiveInput.endNumber;
-            }
-            currentArrowsInput = (appConfig.activeLiveInput.arrows || []).map(code => ({ val: code, x: null, y: null }));
-          }
-
-          initScoring();
-        } else {
-          alert("Tidak ada sesi aktif untuk akun ini. Silakan buat setup di halaman Setup Latihan.");
-          window.location.href = 'home.html';
-        }
-      } catch (error) {
-        console.error("Gagal memuat sesi:", error);
-        alert("Gagal terhubung ke server: " + error.message);
-      }
-    }
-
-    function getUniqueSessions() {
-      const sessions = [];
-      if (appConfig && appConfig.participants) {
-        appConfig.participants.forEach(p => {
-          const s = p.sesi || 'Sesi 1';
-          if (!sessions.includes(s)) sessions.push(s);
-        });
-      }
-      return sessions.sort();
-    }
-
-    function initScoring() {
-      if (!appConfig) return;
-
-      const uniqueSessions = getUniqueSessions();
-      if (activeSessionIndex >= uniqueSessions.length) activeSessionIndex = 0;
-      const currentSessionName = uniqueSessions[activeSessionIndex] || 'Sesi 1';
-
-      document.getElementById('sc-info').innerText = `${appConfig.busur} • ${appConfig.jarak}`;
-      document.getElementById('sc-rambahan-title').innerText = `${currentSessionName} • Rambahan ${currentEnd} dari ${appConfig.totalEnd}`;
-      document.getElementById('sc-arrow-info').innerText = `${appConfig.arrowCount} Arrow`;
-
-      const currentSessionParticipants = appConfig.participants.filter(p => (p.sesi || 'Sesi 1') === currentSessionName);
-      document.getElementById('sc-giliran-label').innerText = `Giliran Pemanah (${currentSessionName}):`;
-
-      const tabsContainer = document.getElementById('sc-archer-tabs');
-      tabsContainer.innerHTML = '';
-
-      currentSessionParticipants.forEach((p) => {
-        const globalIdx = appConfig.participants.indexOf(p);
-        const btn = document.createElement('button');
-        btn.className = `btn-archer-tab ${globalIdx === activeArcherIndex ? 'active' : ''}`;
-        btn.innerText = `${p.name} [${p.bantalan || 'Bantalan 1'}]`;
-        btn.onclick = () => {
-          activeArcherIndex = globalIdx;
-          currentArrowsInput = [];
-          initScoring();
-          scheduleLiveDraftSync(true);
-        };
-        tabsContainer.appendChild(btn);
-      });
-
-      const activeP = appConfig.participants[activeArcherIndex];
-      if (!activeP || (activeP.sesi || 'Sesi 1') !== currentSessionName) {
-        const firstInSession = appConfig.participants.findIndex(p => (p.sesi || 'Sesi 1') === currentSessionName);
-        if (firstInSession !== -1) activeArcherIndex = firstInSession;
-      }
-
-      const currentActiveP = appConfig.participants[activeArcherIndex];
-      if (currentActiveP) {
-        document.getElementById('sc-current-archer-label').innerText = `Poin Arrow ${currentActiveP.name} (${currentActiveP.bantalan || 'Bantalan 1'}) (Rambahan ${currentEnd}):`;
-      }
-
-      renderArrowBoxes();
-      renderAllParticipantsSummary();
-      drawTargetCanvas();
-    }
-
-    function renderArrowBoxes() {
-      if (!appConfig) return;
-      const boxContainer = document.getElementById('sc-arrow-boxes');
-      boxContainer.style.gridTemplateColumns = `repeat(${appConfig.arrowCount}, 1fr)`;
-      boxContainer.innerHTML = '';
-      for (let i = 0; i < appConfig.arrowCount; i++) {
-        const box = document.createElement('div');
-        box.className = 'arrow-box';
-        const item = currentArrowsInput[i];
-        const rawVal = item ? (typeof item === 'object' ? item.val : item) : null;
-        box.innerText = rawVal ? formatScoreLabel(rawVal) : '-';
-        boxContainer.appendChild(box);
-      }
-    }
-
-    function inputScore(val) {
-      if (!appConfig) return;
-      if (currentArrowsInput.length < appConfig.arrowCount) {
-        currentArrowsInput.push({ val: val, x: null, y: null });
-        renderArrowBoxes();
-        drawTargetCanvas();
-        renderAllParticipantsSummary();
-        scheduleLiveDraftSync(false);
-      } else {
-        alert("Arrow sudah penuh, silakan simpan rambahan atau undo.");
-      }
-    }
-
-    function undoScore() {
-      currentArrowsInput.pop();
-      renderArrowBoxes();
-      drawTargetCanvas();
-      renderAllParticipantsSummary();
-      scheduleLiveDraftSync(currentArrowsInput.length === 0);
-    }
-
-    function renderAllParticipantsSummary() {
-      const gridContainer = document.getElementById('participants-summary-grid');
-      if (!gridContainer || !appConfig || !Array.isArray(appConfig.participants)) return;
-      gridContainer.innerHTML = '';
-
-      appConfig.participants.forEach((p, pIdx) => {
-        let totalPoin = 0;
-        let totalXCount = 0;
-        let endRowsHTML = '';
-
-        (p.scores || []).forEach((endArr, eIdx) => {
-          const arrows = Array.isArray(endArr) ? endArr : (endArr.arrows || []);
-          let endSum = 0;
-          arrows.forEach(code => {
-            endSum += getScoreNumericValue(code);
-            if (code === 'X' || code === 'X_WBN') totalXCount += 1;
-          });
-          totalPoin += endSum;
-
-          const formattedArrows = arrows.map(code => formatScoreLabel(code)).join(' • ');
-          endRowsHTML += `
-            <div class="end-row">
-              <div class="end-label">End ${eIdx + 1}</div>
-              <div class="end-dots">${formattedArrows}</div>
-              <span class="end-total">${endSum} Poin</span>
-              <div class="crud-actions">
-                <button type="button" class="btn-crud-edit" title="Edit End ${eIdx + 1}" onclick="openEditEndModal(${pIdx}, ${eIdx})"><i class="fa-solid fa-pen"></i></button>
-                <button type="button" class="btn-crud-delete" title="Hapus End ${eIdx + 1}" onclick="deleteEndDirectly(${pIdx}, ${eIdx})"><i class="fa-solid fa-trash"></i></button>
-              </div>
-            </div>
-          `;
-        });
-
-        if (pIdx === activeArcherIndex && currentArrowsInput.length > 0) {
-          const activeVals = currentArrowsInput.map(item => typeof item === 'object' ? item.val : item);
-          let activeSum = 0;
-          activeVals.forEach(code => {
-            activeSum += getScoreNumericValue(code);
-            if (code === 'X' || code === 'X_WBN') totalXCount += 1;
-          });
-          totalPoin += activeSum;
-          const formattedActive = activeVals.map(c => formatScoreLabel(c)).join(' • ');
-          endRowsHTML += `
-            <div class="end-row draft-row">
-              <div class="end-label">✒️ End ${currentEnd}</div>
-              <div class="end-dots">✒️ ${formattedActive}</div>
-              <span class="end-total">${activeSum} Poin</span>
-            </div>
-          `;
-        }
-
-        const card = document.createElement('div');
-        card.className = `participant-summary-card ${pIdx === activeArcherIndex ? 'active-card' : ''}`;
-        card.innerHTML = `
-          <div class="p-card-header">
-            <div>
-              <div class="p-card-name">${p.name} ${pIdx === activeArcherIndex ? '🎯 (Aktif)' : ''}</div>
-              <div class="p-card-club">${p.club || 'Independen'} • <span style="color:#4f46e5; font-weight:700;">${p.bantalan || 'Bantalan 1'}</span> (${p.sesi || 'Sesi 1'})</div>
-            </div>
-            <div style="display:flex; align-items:center; gap:6px;">
-              <span style="background:#fef3c7; color:#b45309; padding:6px 10px; border-radius:10px; font-weight:800; font-size:0.8rem;">${totalXCount}X</span>
-              <div class="p-card-total-badge">Total: ${totalPoin} Poin</div>
-            </div>
-          </div>
-          <div class="end-history-list">${endRowsHTML || '<p style="font-size:0.75rem; color:#64748b; font-style:italic; text-align:center;">Belum ada rambahan tersimpan.</p>'}</div>
-        `;
-        gridContainer.appendChild(card);
-      });
-    }
-
-    const SCORE_OPTIONS = [
-      { value: 'X', label: 'X(10)' },
-      { value: 'X_WBN', label: 'X(6)' },
-      { value: '10', label: '10' },
-      { value: '9', label: '9' },
-      { value: '8', label: '8' },
-      { value: '7', label: '7' },
-      { value: '6', label: '6' },
-      { value: '5', label: '5' },
-      { value: '4', label: '4' },
-      { value: '3', label: '3' },
-      { value: '2', label: '2' },
-      { value: '1', label: '1' },
-      { value: 'M', label: 'M (0)' }
-    ];
-
-    function openEditEndModal(pIdx, eIdx) {
-      const p = appConfig.participants[pIdx];
-      if (!p || !p.scores || !p.scores[eIdx]) return;
-
-      editingTarget = { pIdx, eIdx };
-      document.getElementById('edit-modal-title').innerText = `Edit ${p.name} • End ${eIdx + 1}`;
-
-      const containerEl = document.getElementById('edit-arrows-container');
-      containerEl.innerHTML = '';
-
-      const rawEnd = p.scores[eIdx];
-      const arrows = Array.isArray(rawEnd) ? rawEnd : (rawEnd.arrows || []);
-
-      arrows.forEach((currentVal, aIdx) => {
-        const row = document.createElement('div');
-        row.className = 'edit-arrow-row';
-
-        const optionsHTML = SCORE_OPTIONS.map(opt =>
-          `<option value="${opt.value}" ${opt.value === String(currentVal) ? 'selected' : ''}>${opt.label}</option>`
-        ).join('');
-
-        row.innerHTML = `
-          <span style="font-weight:700; font-size:0.85rem; color:#334155;">Arrow ${aIdx + 1}</span>
-          <select class="edit-arrow-select" data-arrow-idx="${aIdx}">
-            ${optionsHTML}
-          </select>
-        `;
-        containerEl.appendChild(row);
-      });
-
-      document.getElementById('modal-edit-end').classList.add('active');
-    }
-
-    function closeEditEndModal() {
-      document.getElementById('modal-edit-end').classList.remove('active');
-      editingTarget = { pIdx: null, eIdx: null };
-    }
-
-    async function saveEditedEnd() {
-      const { pIdx, eIdx } = editingTarget;
-      if (pIdx === null || eIdx === null) return;
-
-      const selects = document.querySelectorAll('#edit-arrows-container .edit-arrow-select');
-      const updatedArrows = Array.from(selects).map(sel => sel.value);
-
-      const backupScores = JSON.parse(JSON.stringify(appConfig.participants[pIdx].scores));
-      appConfig.participants[pIdx].scores[eIdx] = updatedArrows;
-
-      const firebaseParticipants = convertScoresToFirebase(appConfig.participants);
-
-      try {
-        const docRef = doc(db, "sessions", activeSessionDocId);
-        await updateDoc(docRef, {
-          participants: firebaseParticipants,
-          updatedAt: serverTimestamp()
-        });
-        closeEditEndModal();
-        renderAllParticipantsSummary();
-      } catch (error) {
-        appConfig.participants[pIdx].scores = backupScores;
-        alert("Gagal menyimpan perubahan ke server: " + error.message);
-      }
-    }
-
-    async function deleteEndDirectly(pIdx, eIdx) {
-      const p = appConfig.participants[pIdx];
-      if (!p || !p.scores || !p.scores[eIdx]) return;
-
-      const konfirmasi = confirm(`Hapus skor End ${eIdx + 1} milik ${p.name}?`);
-      if (!konfirmasi) return;
-
-      const backupScores = JSON.parse(JSON.stringify(p.scores));
-      p.scores.splice(eIdx, 1);
-
-      const firebaseParticipants = convertScoresToFirebase(appConfig.participants);
-
-      try {
-        const docRef = doc(db, "sessions", activeSessionDocId);
-        await updateDoc(docRef, {
-          participants: firebaseParticipants,
-          updatedAt: serverTimestamp()
-        });
-        if (pIdx === activeArcherIndex && currentEnd > 1) {
-          currentEnd = p.scores.length + 1;
-          initScoring();
-        } else {
-          renderAllParticipantsSummary();
-        }
-      } catch (error) {
-        p.scores = backupScores;
-        alert("Gagal menghapus rambahan dari server: " + error.message);
-      }
-    }
-
-    async function deleteEndFromModal() {
-      const { pIdx, eIdx } = editingTarget;
-      if (pIdx === null || eIdx === null) return;
-      closeEditEndModal();
-      await deleteEndDirectly(pIdx, eIdx);
-    }
-
-    // ==========================================
-    // FUNGSI UTAMA PERPINDAHAN GILIRAN
-    // ==========================================
-    async function nextTurnOrRambahan() {
-      if (!appConfig) return;
-      if (currentArrowsInput.length < appConfig.arrowCount) {
-        alert(`Harap isi lengkap ${appConfig.arrowCount} arrow terlebih dahulu!`);
+    const docRef = doc(db, "sessions", activeSessionDocId);
+    
+    unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
+      if (!docSnap.exists()) {
+        alert("Sesi telah dihapus atau tidak ditemukan. Kembali ke Setup.");
+        window.location.href = 'home.html';
         return;
       }
 
-      clearTimeout(liveSyncTimer);
+      const rawData = docSnap.data();
+      rawData.participants = convertScoresFromFirebase(rawData.participants);
+      appConfig = rawData;
 
-      const plainValues = currentArrowsInput.map(i => typeof i === 'object' ? i.val : i);
-      if (!Array.isArray(appConfig.participants[activeArcherIndex].scores)) {
-        appConfig.participants[activeArcherIndex].scores = [];
+      // JIKA ADA INPUTAN ORANG LAIN (Panitia lain) yang berjalan, kita jangan timpa
+      if (appConfig.activeLiveInput && typeof appConfig.activeLiveInput.archerIndex === 'number') {
+         // Cek jika yang input adalah BUKAN saya
+         // Kita asumsikan 1 bantalan = 1 tab/device. Jika Anda sedang mengetik, jangan di-refresh.
+         // Tapi kita tetap tampilkan input dari orang lain di rekap.
       }
+
+      // Render ulang UI dengan data terbaru
+      initScoring();
       
-      // Pastikan array scores punya slot untuk currentEnd-1 (indeks array mulai 0)
-      while (appConfig.participants[activeArcherIndex].scores.length < currentEnd - 1) {
-        appConfig.participants[activeArcherIndex].scores.push([]);
-      }
-      appConfig.participants[activeArcherIndex].scores[currentEnd - 1] = plainValues;
-      
-      appConfig.activeLiveInput = null;
-
-      const firebaseParticipants = convertScoresToFirebase(appConfig.participants);
-
-      try {
-        const docRef = doc(db, "sessions", activeSessionDocId);
-        await updateDoc(docRef, {
-          participants: firebaseParticipants,
-          activeLiveInput: null,
-          updatedAt: serverTimestamp()
-        });
-      } catch (error) {
-        alert("Gagal menyimpan ke server: " + error.message);
-        appConfig.participants[activeArcherIndex].scores.pop();
-        return;
-      }
-
-      currentArrowsInput = [];
-
-      const uniqueSessions = getUniqueSessions();
-      const currentSessionName = uniqueSessions[activeSessionIndex];
-      const currentSessionParticipants = appConfig.participants.filter(p => (p.sesi || 'Sesi 1') === currentSessionName);
-
-      // Cari peserta yang BELUM mengisi rambahan di currentEnd
-      let nextArcherIdx = -1;
-      
-      for (let i = 0; i < currentSessionParticipants.length; i++) {
-        const p = currentSessionParticipants[i];
-        const globalIdx = appConfig.participants.indexOf(p);
-        
-        // Cek apakah peserta ini belum punya skor untuk currentEnd (indeks currentEnd - 1)
-        if (!p.scores || p.scores.length < currentEnd || p.scores[currentEnd - 1] === undefined || p.scores[currentEnd - 1].length === 0) {
-          if (globalIdx !== activeArcherIndex) {
-            nextArcherIdx = globalIdx;
-            break;
-          }
-        }
-      }
-
-      // Jika tidak ada peserta lain yang belum mengisi di currentEnd ini, cek apakah kita perlu naik ke end berikutnya
-      if (nextArcherIdx === -1) {
-        // Cek apakah masih ada peserta yang belum mengisi end berikutnya
-        if (currentEnd < appConfig.totalEnd) {
-          currentEnd++;
-          // Cari peserta pertama di sesi ini
-          const firstInSession = appConfig.participants.indexOf(currentSessionParticipants[0]);
-          activeArcherIndex = firstInSession;
-          initScoring();
-        } else {
-          // Semua rambahan selesai, tampilkan leaderboard
-          showSessionLeaderboard(currentSessionName);
-        }
-      } else {
-        // Ada peserta lain yang belum mengisi, pindah ke dia
-        activeArcherIndex = nextArcherIdx;
-        initScoring();
-      }
-    }
-
-    function showSessionLeaderboard(sessionName) {
-      document.getElementById('page-scoring').style.display = 'none';
-      document.getElementById('page-leaderboard').style.display = 'block';
-
-      const headerTitle = document.querySelector('#page-leaderboard .session-info');
-      if (headerTitle) headerTitle.innerText = `HASIL AKHIR — ${sessionName.toUpperCase()}`;
-
-      const sessionParticipants = appConfig.participants.filter(p => (p.sesi || 'Sesi 1') === sessionName);
-
-      sessionParticipants.forEach(p => {
-        const stats = calculateArcherStats(p);
-        p.totalScore = stats.totalScore;
-        p.totalX = stats.totalX;
-      });
-
-      sessionParticipants.sort((a, b) =>
-        b.totalScore !== a.totalScore
-          ? b.totalScore - a.totalScore
-          : b.totalX - a.totalX
-      );
-
-      renderSessionPodium(sessionParticipants);
-      renderSessionLeaderboardTable(sessionParticipants);
-    }
-
-    async function proceedToNextSession() {
-      const uniqueSessions = getUniqueSessions();
-      activeSessionIndex++;
-      currentEnd = 1;
-
-      if (activeSessionIndex < uniqueSessions.length) {
-        const nextSessionName = uniqueSessions[activeSessionIndex];
-        const firstNextSession = appConfig.participants.findIndex(p => (p.sesi || 'Sesi 1') === nextSessionName);
-        if (firstNextSession !== -1) activeArcherIndex = firstNextSession;
-
-        document.getElementById('page-leaderboard').style.display = 'none';
-        document.getElementById('page-scoring').style.display = 'block';
-        initScoring();
-      } else {
-        await showFinalLeaderboard();
-      }
-    }
-
-    function formatXBadge(p) {
-      return `${p.totalX || 0}X`;
-    }
-
-    function renderSessionPodium(participantsList) {
-      const podiumContainer = document.getElementById('podium-container');
-      podiumContainer.innerHTML = '';
-      const isMobile = window.innerWidth <= 900;
-      const podiumOrder = isMobile ? [0, 1, 2] : [1, 0, 2];
-
-      podiumOrder.forEach(rankIdx => {
-        const p = participantsList[rankIdx];
-        if (!p) return;
-        const isRank1 = (rankIdx === 0);
-        const nameParts = (p.name || 'User').trim().split(' ').filter(n => n.length > 0);
-        const initials = nameParts.length >= 2 ? (nameParts[0][0] + nameParts[1][0]).toUpperCase() : nameParts[0][0].toUpperCase();
-
-        const box = document.createElement('div');
-        box.className = `podium-box ${isRank1 ? 'rank-1-box' : ''}`;
-        box.innerHTML = `
-          <div style="font-size: 0.75rem; font-weight:800; color: ${isRank1 ? '#d97706' : '#64748b'}; margin-bottom:4px;">#${rankIdx + 1}</div>
-          <div class="podium-avatar">${initials}</div>
-          <div class="podium-name">${p.name}</div>
-          <div class="podium-club">${p.club || 'Independen'}</div>
-          <div class="podium-score-badge">${p.totalScore} Poin (${p.totalX || 0}X)</div>
-        `;
-        podiumContainer.appendChild(box);
-      });
-    }
-
-    function renderSessionLeaderboardTable(participantsList) {
-      const tbody = document.getElementById('lb-table-body');
-      tbody.innerHTML = '';
-      participantsList.forEach((p, idx) => {
-        const tr = document.createElement('tr');
-        const globalIdx = appConfig.participants.indexOf(p);
-        tr.innerHTML = `
-          <td style="width: 12%;"><strong>#${idx + 1}</strong></td>
-          <td style="width: 34%;">
-            <strong style="color:#0f172a; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</strong>
-            <span style="font-size:0.7rem; color:#64748b; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.club || 'Independen'}</span>
-          </td>
-          <td style="text-align:center; width: 22%;"><span style="background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:6px; font-weight:800; font-size:0.75rem; white-space:nowrap;">${formatXBadge(p)}</span></td>
-          <td style="text-align:right; font-weight:800; color:#4f46e5; font-size: 0.9rem; width: 16%; white-space:nowrap;">${p.totalScore}</td>
-          <td style="text-align:center; width: 16%;"><button type="button" class="btn-detail-icon" onclick="openDetailModal(${globalIdx})"><i class="fa-solid fa-list"></i> Detail</button></td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    async function showFinalLeaderboard() {
-      const headerTitle = document.querySelector('#page-leaderboard .session-info');
-      if (headerTitle) headerTitle.innerText = `HASIL AKHIR GABUNGAN (SEMUA SESI)`;
-
-      appConfig.participants.forEach(p => {
-        const stats = calculateArcherStats(p);
-        p.totalScore = stats.totalScore;
-        p.totalX = stats.totalX;
-      });
-
-      appConfig.participants.sort((a, b) =>
-        b.totalScore !== a.totalScore
-          ? b.totalScore - a.totalScore
-          : b.totalX - a.totalX
-      );
-
-      await saveToHistory();
-
-      const podiumContainer = document.getElementById('podium-container');
-      podiumContainer.innerHTML = '';
-      const isMobile = window.innerWidth <= 900;
-      const podiumOrder = isMobile ? [0, 1, 2] : [1, 0, 2];
-
-      podiumOrder.forEach(rankIdx => {
-        const p = appConfig.participants[rankIdx];
-        if (!p) return;
-        const isRank1 = (rankIdx === 0);
-        const nameParts = (p.name || 'User').trim().split(' ').filter(n => n.length > 0);
-        const initials = nameParts.length >= 2 ? (nameParts[0][0] + nameParts[1][0]).toUpperCase() : nameParts[0][0].toUpperCase();
-
-        const box = document.createElement('div');
-        box.className = `podium-box ${isRank1 ? 'rank-1-box' : ''}`;
-        box.innerHTML = `
-          <div style="font-size: 0.75rem; font-weight:800; color: ${isRank1 ? '#d97706' : '#64748b'}; margin-bottom:4px;">#${rankIdx + 1}</div>
-          <div class="podium-avatar">${initials}</div>
-          <div class="podium-name">${p.name}</div>
-          <div class="podium-club">${p.club || 'Independen'} • ${p.sesi || 'Sesi 1'}</div>
-          <div class="podium-score-badge">${p.totalScore} Poin (${p.totalX || 0}X)</div>
-        `;
-        podiumContainer.appendChild(box);
-      });
-
-      const tbody = document.getElementById('lb-table-body');
-      tbody.innerHTML = '';
-      appConfig.participants.forEach((p, idx) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td style="width: 12%;"><strong>#${idx + 1}</strong></td>
-          <td style="width: 34%;">
-            <strong style="color:#0f172a; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</strong>
-            <span style="font-size:0.7rem; color:#64748b; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.club || 'Independen'} (${p.sesi || 'Sesi 1'})</span>
-          </td>
-          <td style="text-align:center; width: 22%;"><span style="background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:6px; font-weight:800; font-size:0.75rem; white-space:nowrap;">${formatXBadge(p)}</span></td>
-          <td style="text-align:right; font-weight:800; color:#4f46e5; font-size: 0.9rem; width: 16%; white-space:nowrap;">${p.totalScore}</td>
-          <td style="text-align:center; width: 16%;"><button type="button" class="btn-detail-icon" onclick="openDetailModal(${idx})"><i class="fa-solid fa-list"></i> Detail</button></td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      const actionButton = document.querySelector('#page-leaderboard button.btn-save-rambahan');
-      if (actionButton) {
-        actionButton.innerHTML = `<i class="fa-solid fa-rotate-right"></i> Ulangi / Setup Baru`;
-        actionButton.onclick = () => restartToSetup();
-      }
-    }
-
-    async function saveToHistory() {
-      const activeUser = getActiveUser();
-      const now = new Date();
-      const dateStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-
-      const firebaseParticipants = convertScoresToFirebase(appConfig.participants);
-
-      const newHistoryItem = {
-        ownerEmail: String(activeUser.email || '').trim().toLowerCase(),
-        eventName: appConfig.eventName || 'Sesi Latihan Panahan',
-        location: appConfig.location || 'Lapangan Panahan',
-        date: dateStr,
-        busur: appConfig.busur,
-        jarak: appConfig.jarak,
-        arrowCount: appConfig.arrowCount,
-        totalEnd: appConfig.totalEnd,
-        participants: firebaseParticipants,
-        createdAt: serverTimestamp()
-      };
-
-      try {
-        await addDoc(collection(db, "history"), newHistoryItem);
-      } catch (error) {
-        console.error("Gagal menyimpan riwayat:", error);
-      }
-    }
-
-    function switchRole(role) {
-      if (role === 'admin') window.location.href = 'pendaftaran.html';
-      else if (role === 'display') window.location.href = 'display.html';
-      else if (role === 'scorer') window.location.href = 'scoring.html';
-    }
-
-    function openDetailModal(pIdx) {
-      const p = appConfig.participants[pIdx];
-      document.getElementById('modal-archer-title').innerText = `Rincian: ${p.name}`;
-      const listContainer = document.getElementById('modal-end-list');
-      listContainer.innerHTML = '';
-      if (!p.scores || p.scores.length === 0) {
-        listContainer.innerHTML = `<p style="font-size:0.85rem; color:#64748b; text-align:center;">Belum ada data rambahan.</p>`;
-      } else {
-        p.scores.forEach((endArr, eIdx) => {
-          const arrows = Array.isArray(endArr) ? endArr : (endArr.arrows || []);
-          let endSum = 0;
-          arrows.forEach(code => { endSum += getScoreNumericValue(code); });
-          const formattedArrows = arrows.map(code => formatScoreLabel(code)).join(' • ');
-          const row = document.createElement('div');
-          row.className = 'end-row';
-          row.innerHTML = `<div class="end-label">End ${eIdx + 1}</div><div class="end-dots">${formattedArrows}</div><div class="end-total">${endSum} Poin</div>`;
-          listContainer.appendChild(row);
-        });
-      }
-      document.getElementById('modal-detail').classList.add('active');
-    }
-
-    function closeDetailModal() { document.getElementById('modal-detail').classList.remove('active'); }
-
-    function restartToSetup() {
-      const accountKey = getAccountKey();
-      const docRef = doc(db, "sessions", activeSessionDocId);
-      updateDoc(docRef, { status: "completed", activeLiveInput: null }).then(() => {
-        sessionStorage.removeItem(`archeryConfig_${accountKey}`);
-        localStorage.removeItem(`archeryConfig_${accountKey}`);
-        localStorage.removeItem('archeryConfig');
-        window.location.replace('home.html');
-      }).catch((err) => {
-        console.error("Gagal update status sesi:", err);
-        sessionStorage.removeItem(`archeryConfig_${accountKey}`);
-        localStorage.removeItem(`archeryConfig_${accountKey}`);
-        localStorage.removeItem('archeryConfig');
-        window.location.replace('home.html');
-      });
-    }
-
-    document.addEventListener("DOMContentLoaded", async function () {
-      syncAdminNavAccess();
-      loadActiveUserProfile();
-
+      // Update dropdown role
       const path = window.location.pathname;
       let currentRole = 'scorer';
       if (path.includes('display.html')) currentRole = 'display';
       else if (path.includes('scoring.html')) currentRole = 'scorer';
       else if (path.includes('pendaftaran.html') || path.includes('home.html')) currentRole = 'admin';
-
+      
       const deskPicker = document.getElementById('app-role-picker-desktop');
       const mobPicker = document.getElementById('app-role-picker-mobile');
       if (deskPicker) deskPicker.value = currentRole;
       if (mobPicker) mobPicker.value = currentRole;
+    }, (error) => {
+      console.error("Gagal mendengarkan sesi:", error);
+    });
+  }
 
-      await loadSessionFromFirebase();
+  // ==========================================
+  // FUNGSI UI & LOGIKA
+  // ==========================================
+  function syncLiveDraftToFirebase(forceNull = false) {
+    if (!activeSessionDocId || !appConfig) return;
+    const payload = forceNull ? null : {
+      archerIndex: activeArcherIndex,
+      endNumber: currentEnd,
+      arrows: currentArrowsInput.map(i => typeof i === 'object' ? i.val : i),
+      sum: currentArrowsInput.reduce((acc, item) => acc + getScoreNumericValue(typeof item === 'object' ? item.val : item), 0)
+    };
+    
+    appConfig.activeLiveInput = payload;
+    const docRef = doc(db, "sessions", activeSessionDocId);
+    updateDoc(docRef, {
+      activeLiveInput: payload,
+      updatedAt: serverTimestamp()
+    }).catch(err => console.warn("Gagal sync draft:", err.message));
+  }
+
+  function scheduleLiveDraftSync(forceNull = false) {
+    clearTimeout(liveSyncTimer);
+    liveSyncTimer = setTimeout(() => {
+      syncLiveDraftToFirebase(forceNull);
+    }, 200);
+  }
+
+  const canvas = document.getElementById('targetCanvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const container = document.getElementById('canvasContainer');
+  const wrapper = document.getElementById('targetWrapper');
+  const waletImg = new Image();
+  waletImg.src = "target.jpg";
+
+  let scale = 1, posX = 0, posY = 0, isDragging = false, startX, startY;
+
+  waletImg.onload = () => {
+    canvas.width = waletImg.width;
+    canvas.height = waletImg.height;
+    drawTargetCanvas();
+    resetTargetView();
+  };
+
+  function drawTargetCanvas() {
+    if (!canvas.width || !canvas.height) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(waletImg, 0, 0);
+    currentArrowsInput.forEach((shot) => {
+      if (shot.x && shot.y) {
+        ctx.beginPath();
+        ctx.arc(shot.x, shot.y, 12, 0, 2 * Math.PI);
+        ctx.fillStyle = 'rgba(255, 0, 0, 0.85)';
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#fff';
+        ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 10px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(formatScoreLabel(shot.val), shot.x, shot.y);
+      }
+    });
+  }
+
+  function zoomTarget(factor) { scale = Math.min(Math.max(0.5, scale * factor), 4); updateTargetTransform(); }
+  function resetTargetView() {
+    if (!waletImg.width) return;
+    scale = wrapper.clientWidth / waletImg.width;
+    posX = 0; posY = 0;
+    updateTargetTransform();
+  }
+  function updateTargetTransform() { container.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`; }
+
+  wrapper.addEventListener('pointerdown', (e) => { isDragging = true; startX = e.clientX - posX; startY = e.clientY - posY; });
+  window.addEventListener('pointermove', (e) => { if (!isDragging) return; posX = e.clientX - startX; posY = e.clientY - startY; updateTargetTransform(); });
+  window.addEventListener('pointerup', () => { isDragging = false; });
+
+  canvas.addEventListener('click', (e) => {
+    if (!appConfig || currentArrowsInput.length >= appConfig.arrowCount) { alert("Arrow sudah penuh untuk rambahan ini!"); return; }
+    const rect = canvas.getBoundingClientRect();
+    const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
+    const pixel = ctx.getImageData(clickX, clickY, 1, 1).data;
+    const scoreVal = calculateWaletScore(pixel[0], pixel[1], pixel[2], clickX, clickY);
+
+    currentArrowsInput.push({ val: scoreVal, x: clickX, y: clickY });
+    drawTargetCanvas();
+    renderArrowBoxes();
+    renderAllParticipantsSummary();
+    scheduleLiveDraftSync(false);
+  });
+
+  function calculateWaletScore(r, g, b, x, y) {
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const distance = Math.hypot(x - centerX, y - centerY);
+    if (distance > canvas.width * 0.38) return 'M';
+    if (r > 160 && g > 140 && b < 120) {
+      const centerDist = Math.hypot(x - centerX, y - (canvas.height * 0.52));
+      return centerDist < canvas.width * 0.12 ? '6' : '1';
+    }
+    if (r > 140 && g < 110 && b < 110) return '5';
+    if (r < 120 && g > 90 && b > 140) return '4';
+    if (r < 90 && g < 90 && b < 90) return '2';
+    if (r > 180 && g > 180 && b > 180) return distance > canvas.width * 0.32 ? 'M' : '3';
+    return 'M';
+  }
+
+  function toggleMobileSidebar() { document.getElementById('mobile-sidebar').classList.toggle('active'); document.getElementById('mobile-overlay').classList.toggle('active'); }
+  function switchInputMode(mode) {
+    document.getElementById('btn-mode-keypad').classList.remove('active');
+    document.getElementById('btn-mode-target').classList.remove('active');
+    document.getElementById('btn-mode-walet').classList.remove('active');
+    document.getElementById('container-keypad').style.display = 'none';
+    document.getElementById('container-target').style.display = 'none';
+    document.getElementById('container-walet').style.display = 'none';
+
+    if (mode === 'keypad') { document.getElementById('btn-mode-keypad').classList.add('active'); document.getElementById('container-keypad').style.display = 'grid'; }
+    else if (mode === 'target') { document.getElementById('btn-mode-target').classList.add('active'); document.getElementById('container-target').style.display = 'flex'; }
+    else if (mode === 'walet') { document.getElementById('btn-mode-walet').classList.add('active'); document.getElementById('container-walet').style.display = 'flex'; resetTargetView(); }
+  }
+
+  function handleVirtualTargetClick(event) { inputScore('M'); }
+
+  function loadActiveUserProfile() {
+    const activeUser = getActiveUser();
+    document.getElementById('user-name-text').innerText = activeUser.name || 'Archer Pro';
+    document.getElementById('user-club-text').innerText = activeUser.club || 'Klub Panahan';
+    if (activeUser.name) {
+      const nameParts = activeUser.name.trim().split(' ').filter(n => n.length > 0);
+      document.getElementById('user-avatar-box').innerText = nameParts.length >= 2 ? (nameParts[0][0] + nameParts[1][0]).toUpperCase() : nameParts[0][0].toUpperCase();
+    }
+  }
+
+  function getUniqueSessions() {
+    const sessions = [];
+    if (appConfig && appConfig.participants) {
+      appConfig.participants.forEach(p => {
+        const s = p.sesi || 'Sesi 1';
+        if (!sessions.includes(s)) sessions.push(s);
+      });
+    }
+    return sessions.sort();
+  }
+
+  function initScoring() {
+    if (!appConfig) return;
+
+    // Cegah error jika array participants kosong
+    if (!appConfig.participants || appConfig.participants.length === 0) {
+      document.getElementById('sc-archer-tabs').innerHTML = '<p style="font-size:0.8rem; color:#64748b;">Tidak ada peserta.</p>';
+      return;
+    }
+
+    const uniqueSessions = getUniqueSessions();
+    if (activeSessionIndex >= uniqueSessions.length) activeSessionIndex = 0;
+    const currentSessionName = uniqueSessions[activeSessionIndex] || 'Sesi 1';
+
+    document.getElementById('sc-info').innerText = `${appConfig.busur} • ${appConfig.jarak}`;
+    document.getElementById('sc-rambahan-title').innerText = `${currentSessionName} • Rambahan ${currentEnd} dari ${appConfig.totalEnd}`;
+    document.getElementById('sc-arrow-info').innerText = `${appConfig.arrowCount} Arrow`;
+
+    const currentSessionParticipants = appConfig.participants.filter(p => (p.sesi || 'Sesi 1') === currentSessionName);
+    document.getElementById('sc-giliran-label').innerText = `Giliran Pemanah (${currentSessionName}):`;
+
+    const tabsContainer = document.getElementById('sc-archer-tabs');
+    tabsContainer.innerHTML = '';
+
+    currentSessionParticipants.forEach((p) => {
+      const globalIdx = appConfig.participants.indexOf(p);
+      const btn = document.createElement('button');
+      btn.className = `btn-archer-tab ${globalIdx === activeArcherIndex ? 'active' : ''}`;
+      btn.innerText = `${p.name} [${p.bantalan || 'Bantalan 1'}]`;
+      btn.onclick = () => {
+        activeArcherIndex = globalIdx;
+        currentArrowsInput = [];
+        initScoring();
+        scheduleLiveDraftSync(true);
+      };
+      tabsContainer.appendChild(btn);
     });
 
-    window.toggleMobileSidebar = toggleMobileSidebar;
-    window.switchInputMode = switchInputMode;
-    window.inputScore = inputScore;
-    window.undoScore = undoScore;
-    window.nextTurnOrRambahan = nextTurnOrRambahan;
-    window.proceedToNextSession = proceedToNextSession;
-    window.openDetailModal = openDetailModal;
-    window.closeDetailModal = closeDetailModal;
-    window.openEditEndModal = openEditEndModal;
-    window.closeEditEndModal = closeEditEndModal;
-    window.saveEditedEnd = saveEditedEnd;
-    window.deleteEndDirectly = deleteEndDirectly;
-    window.deleteEndFromModal = deleteEndFromModal;
-    window.restartToSetup = restartToSetup;
-    window.switchRole = switchRole;
-    window.handleVirtualTargetClick = handleVirtualTargetClick;
-    window.zoomTarget = zoomTarget;
-    window.resetTargetView = resetTargetView;
-  </script>
+    const activeP = appConfig.participants[activeArcherIndex];
+    if (!activeP || (activeP.sesi || 'Sesi 1') !== currentSessionName) {
+      const firstInSession = appConfig.participants.findIndex(p => (p.sesi || 'Sesi 1') === currentSessionName);
+      if (firstInSession !== -1) activeArcherIndex = firstInSession;
+    }
+
+    const currentActiveP = appConfig.participants[activeArcherIndex];
+    if (currentActiveP) {
+      document.getElementById('sc-current-archer-label').innerText = `Poin Arrow ${currentActiveP.name} (${currentActiveP.bantalan || 'Bantalan 1'}) (Rambahan ${currentEnd}):`;
+    }
+
+    renderArrowBoxes();
+    renderAllParticipantsSummary();
+    drawTargetCanvas();
+  }
+
+  function renderArrowBoxes() {
+    if (!appConfig) return;
+    const boxContainer = document.getElementById('sc-arrow-boxes');
+    boxContainer.style.gridTemplateColumns = `repeat(${appConfig.arrowCount}, 1fr)`;
+    boxContainer.innerHTML = '';
+    for (let i = 0; i < appConfig.arrowCount; i++) {
+      const box = document.createElement('div');
+      box.className = 'arrow-box';
+      const item = currentArrowsInput[i];
+      const rawVal = item ? (typeof item === 'object' ? item.val : item) : null;
+      box.innerText = rawVal ? formatScoreLabel(rawVal) : '-';
+      boxContainer.appendChild(box);
+    }
+  }
+
+  function inputScore(val) {
+    if (!appConfig) return;
+    if (currentArrowsInput.length < appConfig.arrowCount) {
+      currentArrowsInput.push({ val: val, x: null, y: null });
+      renderArrowBoxes();
+      drawTargetCanvas();
+      renderAllParticipantsSummary();
+      scheduleLiveDraftSync(false);
+    } else {
+      alert("Arrow sudah penuh, silakan simpan rambahan atau undo.");
+    }
+  }
+
+  function undoScore() {
+    currentArrowsInput.pop();
+    renderArrowBoxes();
+    drawTargetCanvas();
+    renderAllParticipantsSummary();
+    scheduleLiveDraftSync(currentArrowsInput.length === 0);
+  }
+
+  function renderAllParticipantsSummary() {
+    const gridContainer = document.getElementById('participants-summary-grid');
+    if (!gridContainer || !appConfig || !Array.isArray(appConfig.participants)) return;
+    gridContainer.innerHTML = '';
+
+    appConfig.participants.forEach((p, pIdx) => {
+      let totalPoin = 0;
+      let totalXCount = 0;
+      let endRowsHTML = '';
+
+      (p.scores || []).forEach((endArr, eIdx) => {
+        const arrows = Array.isArray(endArr) ? endArr : (endArr.arrows || []);
+        let endSum = 0;
+        arrows.forEach(code => {
+          endSum += getScoreNumericValue(code);
+          if (code === 'X' || code === 'X_WBN') totalXCount += 1;
+        });
+        totalPoin += endSum;
+
+        const formattedArrows = arrows.map(code => formatScoreLabel(code)).join(' • ');
+        endRowsHTML += `
+          <div class="end-row">
+            <div class="end-label">End ${eIdx + 1}</div>
+            <div class="end-dots">${formattedArrows}</div>
+            <span class="end-total">${endSum} Poin</span>
+            <div class="crud-actions">
+              <button type="button" class="btn-crud-edit" title="Edit End ${eIdx + 1}" onclick="openEditEndModal(${pIdx}, ${eIdx})"><i class="fa-solid fa-pen"></i></button>
+              <button type="button" class="btn-crud-delete" title="Hapus End ${eIdx + 1}" onclick="deleteEndDirectly(${pIdx}, ${eIdx})"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>
+        `;
+      });
+
+      // Menampilkan inputan sementara (sedang diketik)
+      if (pIdx === activeArcherIndex && currentArrowsInput.length > 0) {
+        const activeVals = currentArrowsInput.map(item => typeof item === 'object' ? item.val : item);
+        let activeSum = 0;
+        activeVals.forEach(code => {
+          activeSum += getScoreNumericValue(code);
+          if (code === 'X' || code === 'X_WBN') totalXCount += 1;
+        });
+        totalPoin += activeSum;
+        const formattedActive = activeVals.map(c => formatScoreLabel(c)).join(' • ');
+        endRowsHTML += `
+          <div class="end-row draft-row">
+            <div class="end-label">✒️ End ${currentEnd}</div>
+            <div class="end-dots">✒️ ${formattedActive}</div>
+            <span class="end-total">${activeSum} Poin</span>
+          </div>
+        `;
+      }
+
+      const card = document.createElement('div');
+      card.className = `participant-summary-card ${pIdx === activeArcherIndex ? 'active-card' : ''}`;
+      card.innerHTML = `
+        <div class="p-card-header">
+          <div>
+            <div class="p-card-name">${p.name} ${pIdx === activeArcherIndex ? '🎯 (Aktif)' : ''}</div>
+            <div class="p-card-club">${p.club || 'Independen'} • <span style="color:#4f46e5; font-weight:700;">${p.bantalan || 'Bantalan 1'}</span> (${p.sesi || 'Sesi 1'})</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="background:#fef3c7; color:#b45309; padding:6px 10px; border-radius:10px; font-weight:800; font-size:0.8rem;">${totalXCount}X</span>
+            <div class="p-card-total-badge">Total: ${totalPoin} Poin</div>
+          </div>
+        </div>
+        <div class="end-history-list">${endRowsHTML || '<p style="font-size:0.75rem; color:#64748b; font-style:italic; text-align:center;">Belum ada rambahan tersimpan.</p>'}</div>
+      `;
+      gridContainer.appendChild(card);
+    });
+  }
+
+  const SCORE_OPTIONS = [
+    { value: 'X', label: 'X(10)' },
+    { value: 'X_WBN', label: 'X(6)' },
+    { value: '10', label: '10' },
+    { value: '9', label: '9' },
+    { value: '8', label: '8' },
+    { value: '7', label: '7' },
+    { value: '6', label: '6' },
+    { value: '5', label: '5' },
+    { value: '4', label: '4' },
+    { value: '3', label: '3' },
+    { value: '2', label: '2' },
+    { value: '1', label: '1' },
+    { value: 'M', label: 'M (0)' }
+  ];
+
+  function openEditEndModal(pIdx, eIdx) {
+    const p = appConfig.participants[pIdx];
+    if (!p || !p.scores || !p.scores[eIdx]) return;
+
+    editingTarget = { pIdx, eIdx };
+    document.getElementById('edit-modal-title').innerText = `Edit ${p.name} • End ${eIdx + 1}`;
+
+    const containerEl = document.getElementById('edit-arrows-container');
+    containerEl.innerHTML = '';
+
+    const rawEnd = p.scores[eIdx];
+    const arrows = Array.isArray(rawEnd) ? rawEnd : (rawEnd.arrows || []);
+
+    arrows.forEach((currentVal, aIdx) => {
+      const row = document.createElement('div');
+      row.className = 'edit-arrow-row';
+
+      const optionsHTML = SCORE_OPTIONS.map(opt =>
+        `<option value="${opt.value}" ${opt.value === String(currentVal) ? 'selected' : ''}>${opt.label}</option>`
+      ).join('');
+
+      row.innerHTML = `
+        <span style="font-weight:700; font-size:0.85rem; color:#334155;">Arrow ${aIdx + 1}</span>
+        <select class="edit-arrow-select" data-arrow-idx="${aIdx}">
+          ${optionsHTML}
+        </select>
+      `;
+      containerEl.appendChild(row);
+    });
+
+    document.getElementById('modal-edit-end').classList.add('active');
+  }
+
+  function closeEditEndModal() {
+    document.getElementById('modal-edit-end').classList.remove('active');
+    editingTarget = { pIdx: null, eIdx: null };
+  }
+
+  async function saveEditedEnd() {
+    const { pIdx, eIdx } = editingTarget;
+    if (pIdx === null || eIdx === null) return;
+
+    const selects = document.querySelectorAll('#edit-arrows-container .edit-arrow-select');
+    const updatedArrows = Array.from(selects).map(sel => sel.value);
+
+    const backupScores = JSON.parse(JSON.stringify(appConfig.participants[pIdx].scores));
+    appConfig.participants[pIdx].scores[eIdx] = updatedArrows;
+
+    const firebaseParticipants = convertScoresToFirebase(appConfig.participants);
+
+    try {
+      const docRef = doc(db, "sessions", activeSessionDocId);
+      await updateDoc(docRef, {
+        participants: firebaseParticipants,
+        updatedAt: serverTimestamp()
+      });
+      closeEditEndModal();
+      renderAllParticipantsSummary();
+    } catch (error) {
+      appConfig.participants[pIdx].scores = backupScores;
+      alert("Gagal menyimpan perubahan ke server: " + error.message);
+    }
+  }
+
+  async function deleteEndDirectly(pIdx, eIdx) {
+    const p = appConfig.participants[pIdx];
+    if (!p || !p.scores || !p.scores[eIdx]) return;
+
+    const konfirmasi = confirm(`Hapus skor End ${eIdx + 1} milik ${p.name}?`);
+    if (!konfirmasi) return;
+
+    const backupScores = JSON.parse(JSON.stringify(p.scores));
+    p.scores.splice(eIdx, 1);
+
+    const firebaseParticipants = convertScoresToFirebase(appConfig.participants);
+
+    try {
+      const docRef = doc(db, "sessions", activeSessionDocId);
+      await updateDoc(docRef, {
+        participants: firebaseParticipants,
+        updatedAt: serverTimestamp()
+      });
+      if (pIdx === activeArcherIndex && currentEnd > 1) {
+        currentEnd = p.scores.length + 1;
+        initScoring();
+      } else {
+        renderAllParticipantsSummary();
+      }
+    } catch (error) {
+      p.scores = backupScores;
+      alert("Gagal menghapus rambahan dari server: " + error.message);
+    }
+  }
+
+  async function deleteEndFromModal() {
+    const { pIdx, eIdx } = editingTarget;
+    if (pIdx === null || eIdx === null) return;
+    closeEditEndModal();
+    await deleteEndDirectly(pIdx, eIdx);
+  }
+
+  // ==========================================
+  // FUNGSI UTAMA PERPINDAHAN GILIRAN
+  // ==========================================
+  async function nextTurnOrRambahan() {
+    if (!appConfig) return;
+    if (currentArrowsInput.length < appConfig.arrowCount) {
+      alert(`Harap isi lengkap ${appConfig.arrowCount} arrow terlebih dahulu!`);
+      return;
+    }
+
+    clearTimeout(liveSyncTimer);
+
+    const plainValues = currentArrowsInput.map(i => typeof i === 'object' ? i.val : i);
+    if (!Array.isArray(appConfig.participants[activeArcherIndex].scores)) {
+      appConfig.participants[activeArcherIndex].scores = [];
+    }
+    
+    while (appConfig.participants[activeArcherIndex].scores.length < currentEnd - 1) {
+      appConfig.participants[activeArcherIndex].scores.push([]);
+    }
+    appConfig.participants[activeArcherIndex].scores[currentEnd - 1] = plainValues;
+    
+    appConfig.activeLiveInput = null;
+
+    const firebaseParticipants = convertScoresToFirebase(appConfig.participants);
+
+    try {
+      const docRef = doc(db, "sessions", activeSessionDocId);
+      await updateDoc(docRef, {
+        participants: firebaseParticipants,
+        activeLiveInput: null,
+        updatedAt: serverTimestamp()
+      });
+    } catch (error) {
+      alert("Gagal menyimpan ke server: " + error.message);
+      appConfig.participants[activeArcherIndex].scores.pop();
+      return;
+    }
+
+    currentArrowsInput = [];
+
+    const uniqueSessions = getUniqueSessions();
+    const currentSessionName = uniqueSessions[activeSessionIndex];
+    const currentSessionParticipants = appConfig.participants.filter(p => (p.sesi || 'Sesi 1') === currentSessionName);
+
+    let nextArcherIdx = -1;
+    
+    for (let i = 0; i < currentSessionParticipants.length; i++) {
+      const p = currentSessionParticipants[i];
+      const globalIdx = appConfig.participants.indexOf(p);
+      
+      if (!p.scores || p.scores.length < currentEnd || p.scores[currentEnd - 1] === undefined || p.scores[currentEnd - 1].length === 0) {
+        if (globalIdx !== activeArcherIndex) {
+          nextArcherIdx = globalIdx;
+          break;
+        }
+      }
+    }
+
+    if (nextArcherIdx === -1) {
+      if (currentEnd < appConfig.totalEnd) {
+        currentEnd++;
+        const firstInSession = appConfig.participants.indexOf(currentSessionParticipants[0]);
+        activeArcherIndex = firstInSession;
+        initScoring();
+      } else {
+        showSessionLeaderboard(currentSessionName);
+      }
+    } else {
+      activeArcherIndex = nextArcherIdx;
+      initScoring();
+    }
+  }
+
+  function showSessionLeaderboard(sessionName) {
+    document.getElementById('page-scoring').style.display = 'none';
+    document.getElementById('page-leaderboard').style.display = 'block';
+
+    const headerTitle = document.querySelector('#page-leaderboard .session-info');
+    if (headerTitle) headerTitle.innerText = `HASIL AKHIR — ${sessionName.toUpperCase()}`;
+
+    const sessionParticipants = appConfig.participants.filter(p => (p.sesi || 'Sesi 1') === sessionName);
+
+    sessionParticipants.forEach(p => {
+      const stats = calculateArcherStats(p);
+      p.totalScore = stats.totalScore;
+      p.totalX = stats.totalX;
+    });
+
+    sessionParticipants.sort((a, b) =>
+      b.totalScore !== a.totalScore
+        ? b.totalScore - a.totalScore
+        : b.totalX - a.totalX
+    );
+
+    renderSessionPodium(sessionParticipants);
+    renderSessionLeaderboardTable(sessionParticipants);
+  }
+
+  async function proceedToNextSession() {
+    const uniqueSessions = getUniqueSessions();
+    activeSessionIndex++;
+    currentEnd = 1;
+
+    if (activeSessionIndex < uniqueSessions.length) {
+      const nextSessionName = uniqueSessions[activeSessionIndex];
+      const firstNextSession = appConfig.participants.findIndex(p => (p.sesi || 'Sesi 1') === nextSessionName);
+      if (firstNextSession !== -1) activeArcherIndex = firstNextSession;
+
+      document.getElementById('page-leaderboard').style.display = 'none';
+      document.getElementById('page-scoring').style.display = 'block';
+      initScoring();
+    } else {
+      await showFinalLeaderboard();
+    }
+  }
+
+  function formatXBadge(p) {
+    return `${p.totalX || 0}X`;
+  }
+
+  function renderSessionPodium(participantsList) {
+    const podiumContainer = document.getElementById('podium-container');
+    podiumContainer.innerHTML = '';
+    const isMobile = window.innerWidth <= 900;
+    const podiumOrder = isMobile ? [0, 1, 2] : [1, 0, 2];
+
+    podiumOrder.forEach(rankIdx => {
+      const p = participantsList[rankIdx];
+      if (!p) return;
+      const isRank1 = (rankIdx === 0);
+      const nameParts = (p.name || 'User').trim().split(' ').filter(n => n.length > 0);
+      const initials = nameParts.length >= 2 ? (nameParts[0][0] + nameParts[1][0]).toUpperCase() : nameParts[0][0].toUpperCase();
+
+      const box = document.createElement('div');
+      box.className = `podium-box ${isRank1 ? 'rank-1-box' : ''}`;
+      box.innerHTML = `
+        <div style="font-size: 0.75rem; font-weight:800; color: ${isRank1 ? '#d97706' : '#64748b'}; margin-bottom:4px;">#${rankIdx + 1}</div>
+        <div class="podium-avatar">${initials}</div>
+        <div class="podium-name">${p.name}</div>
+        <div class="podium-club">${p.club || 'Independen'}</div>
+        <div class="podium-score-badge">${p.totalScore} Poin (${p.totalX || 0}X)</div>
+      `;
+      podiumContainer.appendChild(box);
+    });
+  }
+
+  function renderSessionLeaderboardTable(participantsList) {
+    const tbody = document.getElementById('lb-table-body');
+    tbody.innerHTML = '';
+    participantsList.forEach((p, idx) => {
+      const tr = document.createElement('tr');
+      const globalIdx = appConfig.participants.indexOf(p);
+      tr.innerHTML = `
+        <td style="width: 12%;"><strong>#${idx + 1}</strong></td>
+        <td style="width: 34%;">
+          <strong style="color:#0f172a; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</strong>
+          <span style="font-size:0.7rem; color:#64748b; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.club || 'Independen'}</span>
+        </td>
+        <td style="text-align:center; width: 22%;"><span style="background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:6px; font-weight:800; font-size:0.75rem; white-space:nowrap;">${formatXBadge(p)}</span></td>
+        <td style="text-align:right; font-weight:800; color:#4f46e5; font-size: 0.9rem; width: 16%; white-space:nowrap;">${p.totalScore}</td>
+        <td style="text-align:center; width: 16%;"><button type="button" class="btn-detail-icon" onclick="openDetailModal(${globalIdx})"><i class="fa-solid fa-list"></i> Detail</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function showFinalLeaderboard() {
+    const headerTitle = document.querySelector('#page-leaderboard .session-info');
+    if (headerTitle) headerTitle.innerText = `HASIL AKHIR GABUNGAN (SEMUA SESI)`;
+
+    appConfig.participants.forEach(p => {
+      const stats = calculateArcherStats(p);
+      p.totalScore = stats.totalScore;
+      p.totalX = stats.totalX;
+    });
+
+    appConfig.participants.sort((a, b) =>
+      b.totalScore !== a.totalScore
+        ? b.totalScore - a.totalScore
+        : b.totalX - a.totalX
+    );
+
+    await saveToHistory();
+
+    const podiumContainer = document.getElementById('podium-container');
+    podiumContainer.innerHTML = '';
+    const isMobile = window.innerWidth <= 900;
+    const podiumOrder = isMobile ? [0, 1, 2] : [1, 0, 2];
+
+    podiumOrder.forEach(rankIdx => {
+      const p = appConfig.participants[rankIdx];
+      if (!p) return;
+      const isRank1 = (rankIdx === 0);
+      const nameParts = (p.name || 'User').trim().split(' ').filter(n => n.length > 0);
+      const initials = nameParts.length >= 2 ? (nameParts[0][0] + nameParts[1][0]).toUpperCase() : nameParts[0][0].toUpperCase();
+
+      const box = document.createElement('div');
+      box.className = `podium-box ${isRank1 ? 'rank-1-box' : ''}`;
+      box.innerHTML = `
+        <div style="font-size: 0.75rem; font-weight:800; color: ${isRank1 ? '#d97706' : '#64748b'}; margin-bottom:4px;">#${rankIdx + 1}</div>
+        <div class="podium-avatar">${initials}</div>
+        <div class="podium-name">${p.name}</div>
+        <div class="podium-club">${p.club || 'Independen'} • ${p.sesi || 'Sesi 1'}</div>
+        <div class="podium-score-badge">${p.totalScore} Poin (${p.totalX || 0}X)</div>
+      `;
+      podiumContainer.appendChild(box);
+    });
+
+    const tbody = document.getElementById('lb-table-body');
+    tbody.innerHTML = '';
+    appConfig.participants.forEach((p, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="width: 12%;"><strong>#${idx + 1}</strong></td>
+        <td style="width: 34%;">
+          <strong style="color:#0f172a; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</strong>
+          <span style="font-size:0.7rem; color:#64748b; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.club || 'Independen'} (${p.sesi || 'Sesi 1'})</span>
+        </td>
+        <td style="text-align:center; width: 22%;"><span style="background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:6px; font-weight:800; font-size:0.75rem; white-space:nowrap;">${formatXBadge(p)}</span></td>
+        <td style="text-align:right; font-weight:800; color:#4f46e5; font-size: 0.9rem; width: 16%; white-space:nowrap;">${p.totalScore}</td>
+        <td style="text-align:center; width: 16%;"><button type="button" class="btn-detail-icon" onclick="openDetailModal(${idx})"><i class="fa-solid fa-list"></i> Detail</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const actionButton = document.querySelector('#page-leaderboard button.btn-save-rambahan');
+    if (actionButton) {
+      actionButton.innerHTML = `<i class="fa-solid fa-rotate-right"></i> Ulangi / Setup Baru`;
+      actionButton.onclick = () => restartToSetup();
+    }
+  }
+
+  async function saveToHistory() {
+    const activeUser = getActiveUser();
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+    const firebaseParticipants = convertScoresToFirebase(appConfig.participants);
+
+    const newHistoryItem = {
+      ownerEmail: String(activeUser.email || '').trim().toLowerCase(),
+      eventName: appConfig.eventName || 'Sesi Latihan Panahan',
+      location: appConfig.location || 'Lapangan Panahan',
+      date: dateStr,
+      busur: appConfig.busur,
+      jarak: appConfig.jarak,
+      arrowCount: appConfig.arrowCount,
+      totalEnd: appConfig.totalEnd,
+      participants: firebaseParticipants,
+      createdAt: serverTimestamp()
+    };
+
+    try {
+      await addDoc(collection(db, "history"), newHistoryItem);
+    } catch (error) {
+      console.error("Gagal menyimpan riwayat:", error);
+    }
+  }
+
+  function switchRole(role) {
+    if (role === 'admin') window.location.href = 'pendaftaran.html';
+    else if (role === 'display') window.location.href = 'display.html';
+    else if (role === 'scorer') window.location.href = 'scoring.html';
+  }
+
+  function openDetailModal(pIdx) {
+    const p = appConfig.participants[pIdx];
+    document.getElementById('modal-archer-title').innerText = `Rincian: ${p.name}`;
+    const listContainer = document.getElementById('modal-end-list');
+    listContainer.innerHTML = '';
+    if (!p.scores || p.scores.length === 0) {
+      listContainer.innerHTML = `<p style="font-size:0.85rem; color:#64748b; text-align:center;">Belum ada data rambahan.</p>`;
+    } else {
+      p.scores.forEach((endArr, eIdx) => {
+        const arrows = Array.isArray(endArr) ? endArr : (endArr.arrows || []);
+        let endSum = 0;
+        arrows.forEach(code => { endSum += getScoreNumericValue(code); });
+        const formattedArrows = arrows.map(code => formatScoreLabel(code)).join(' • ');
+        const row = document.createElement('div');
+        row.className = 'end-row';
+        row.innerHTML = `<div class="end-label">End ${eIdx + 1}</div><div class="end-dots">${formattedArrows}</div><div class="end-total">${endSum} Poin</div>`;
+        listContainer.appendChild(row);
+      });
+    }
+    document.getElementById('modal-detail').classList.add('active');
+  }
+
+  function closeDetailModal() { document.getElementById('modal-detail').classList.remove('active'); }
+
+  function restartToSetup() {
+    const accountKey = getAccountKey();
+    const docRef = doc(db, "sessions", activeSessionDocId);
+    updateDoc(docRef, { status: "completed", activeLiveInput: null }).then(() => {
+      sessionStorage.removeItem(`archeryConfig_${accountKey}`);
+      localStorage.removeItem(`archeryConfig_${accountKey}`);
+      localStorage.removeItem('archeryConfig');
+      window.location.replace('home.html');
+    }).catch((err) => {
+      console.error("Gagal update status sesi:", err);
+      sessionStorage.removeItem(`archeryConfig_${accountKey}`);
+      localStorage.removeItem(`archeryConfig_${accountKey}`);
+      localStorage.removeItem('archeryConfig');
+      window.location.replace('home.html');
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", async function () {
+    syncAdminNavAccess();
+    loadActiveUserProfile();
+
+    // Mulai mendengarkan perubahan dari Firebase secara real-time
+    listenToSession();
+  });
+
+  window.toggleMobileSidebar = toggleMobileSidebar;
+  window.switchInputMode = switchInputMode;
+  window.inputScore = inputScore;
+  window.undoScore = undoScore;
+  window.nextTurnOrRambahan = nextTurnOrRambahan;
+  window.proceedToNextSession = proceedToNextSession;
+  window.openDetailModal = openDetailModal;
+  window.closeDetailModal = closeDetailModal;
+  window.openEditEndModal = openEditEndModal;
+  window.closeEditEndModal = closeEditEndModal;
+  window.saveEditedEnd = saveEditedEnd;
+  window.deleteEndDirectly = deleteEndDirectly;
+  window.deleteEndFromModal = deleteEndFromModal;
+  window.restartToSetup = restartToSetup;
+  window.switchRole = switchRole;
+  window.handleVirtualTargetClick = handleVirtualTargetClick;
+  window.zoomTarget = zoomTarget;
+  window.resetTargetView = resetTargetView;
+</script>
 </body>
 
 </html>
