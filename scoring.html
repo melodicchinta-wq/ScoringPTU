@@ -391,7 +391,7 @@
     <p>Copyright &copy; 2026 &bull; Mela Aulia Syarifah/p>
   </footer>
 
-  <script type="module">
+<script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
   import { getFirestore, doc, onSnapshot, updateDoc, serverTimestamp, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -399,13 +399,12 @@
   // KONFIGURASI FIREBASE
   // ==========================================
   const firebaseConfig = {
-    apiKey: "AIzaSyBO7QmIO80laPQUqKj80C-QZ74ZHPK6WJA",
-      authDomain: "scoringptu.firebaseapp.com",
-      projectId: "scoringptu",
-      storageBucket: "scoringptu.firebasestorage.app",
-      messagingSenderId: "790472578115",
-      appId: "1:790472578115:web:0f4d1395bc484686c9f0f6",
-      measurementId: "G-Z6TL4KDNJJ"
+    apiKey: "ISI_API_KEY_KAMU",
+    authDomain: "scoringptu.firebaseapp.com",
+    projectId: "scoringptu",
+    storageBucket: "scoringptu.appspot.com",
+    messagingSenderId: "ISI_MESSAGING_SENDER_ID",
+    appId: "ISI_APP_ID"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -1306,6 +1305,7 @@
   window.zoomTarget = zoomTarget;
   window.resetTargetView = resetTargetView;
 </script>
+  
 </body>
 
 </html>
