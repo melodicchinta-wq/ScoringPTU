@@ -870,6 +870,58 @@ function renderAllParticipantsSummary() {
     `;
     gridContainer.appendChild(card);
   });
+    }
+    
+    // 2. Render End yang SEDANG DIINPUT (Draft)
+    // Cek apakah ada liveInput dari Firebase untuk peserta ini
+    const isThisArcherActiveDraft = liveInput && liveInput.archerIndex === pIdx && liveInput.arrows && liveInput.arrows.length > 0;
+    
+    // ATAU cek apakah ini peserta yang sedang aktif di layar kita sendiri (jika kita yang mengetik)
+    const isMyLocalActiveDraft = (pIdx === activeArcherIndex && currentArrowsInput.length > 0);
+
+    if (isThisArcherActiveDraft || isMyLocalActiveDraft) {
+      // Prioritaskan data lokal jika kita yang sedang mengetik, jika tidak pakai data dari Firebase
+      const activeVals = isMyLocalActiveDraft 
+        ? currentArrowsInput.map(item => typeof item === 'object' ? item.val : item)
+        : liveInput.arrows;
+
+      let activeSum = 0;
+      activeVals.forEach(code => {
+        activeSum += getScoreNumericValue(code);
+        if (code === 'X' || code === 'X_WBN') totalXCount += 1;
+      });
+      
+      totalPoin += activeSum; // Tambahkan ke total poin keseluruhan
+      
+      const formattedActive = activeVals.map(c => formatScoreLabel(c)).join(' • ');
+      
+      // Tampilkan sebagai Draft Oranye
+      endRowsHTML += `
+        <div class="end-row draft-row">
+          <div class="end-label">✒️ End ${p.scores.length + 1}</div>
+          <div class="end-dots">✒️ ${formattedActive}</div>
+          <span class="end-total">${activeSum} Poin</span>
+        </div>
+      `;
+    }
+
+    const card = document.createElement('div');
+    card.className = `participant-summary-card ${pIdx === activeArcherIndex ? 'active-card' : ''}`;
+    card.innerHTML = `
+      <div class="p-card-header">
+        <div>
+          <div class="p-card-name">${p.name} ${pIdx === activeArcherIndex ? '🎯 (Aktif)' : ''}</div>
+          <div class="p-card-club">${p.club || 'Independen'} • <span style="color:#4f46e5; font-weight:700;">${p.bantalan || 'Bantalan 1'}</span> (${p.sesi || 'Sesi 1'})</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="background:#fef3c7; color:#b45309; padding:6px 10px; border-radius:10px; font-weight:800; font-size:0.8rem;">${totalXCount}X</span>
+          <div class="p-card-total-badge">Total: ${totalPoin} Poin</div>
+        </div>
+      </div>
+      <div class="end-history-list">${endRowsHTML || '<p style="font-size:0.75rem; color:#64748b; font-style:italic; text-align:center;">Belum ada rambahan tersimpan.</p>'}</div>
+    `;
+    gridContainer.appendChild(card);
+  });
 }
     
   const SCORE_OPTIONS = [
