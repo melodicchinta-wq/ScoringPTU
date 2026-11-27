@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -120,7 +121,7 @@
   </main>
 
   <footer class="desktop-footer">
-    <p>Copyright &copy; 2026 &bull; Mela Aulia Syarifah</p>
+    <p>Copyright &copy; 2026 &bull; Mela Aulia Syarifah </p>
   </footer>
 
   <script type="module">
@@ -189,6 +190,12 @@
       return parseInt(code, 10) || 0;
     }
 
+    function formatArrowCode(code) {
+      if (code === 'X_WBN') return 'X(6)';
+      if (code === 'X') return 'X(10)';
+      return code;
+    }
+
     let unsubscribeSnapshot = null;
 
     function startLiveDisplay() {
@@ -232,7 +239,24 @@
       document.getElementById('display-table-body').innerHTML = `<tr><td colspan="5" style="text-align:center; color:#64748b; padding:20px;">${msg}</td></tr>`;
     }
 
-function renderLiveDisplay(config) {
+    function getDraftForArcher(config, pIdx) {
+      const liveDrafts = config.liveDrafts || {};
+      const fromMap = liveDrafts[String(pIdx)];
+      if (fromMap && Array.isArray(fromMap.arrows) && fromMap.arrows.length > 0) {
+        return fromMap;
+      }
+      if (
+        config.activeLiveInput &&
+        Number(config.activeLiveInput.archerIndex) === pIdx &&
+        Array.isArray(config.activeLiveInput.arrows) &&
+        config.activeLiveInput.arrows.length > 0
+      ) {
+        return config.activeLiveInput;
+      }
+      return null;
+    }
+
+    function renderLiveDisplay(config) {
       if (!config || !config.participants || config.participants.length === 0) {
         showEmptyState("Sesi tidak memiliki peserta.");
         return;
@@ -257,30 +281,29 @@ function renderLiveDisplay(config) {
             });
             totalScore += endSum;
 
-            const formattedArrows = arrows.map(c => c === 'X_WBN' ? 'X(WBN)' : (c === 'X' ? 'X(10)' : c)).join(' • ');
+            const formattedArrows = arrows.map(c => formatArrowCode(c)).join(' • ');
             endDetailsHTML += `<div style="font-size:0.75rem; color:#64748b; font-weight:600;">End ${eIdx + 1}: ${formattedArrows} (${endSum} Poin)</div>`;
           });
         }
 
         let activeInputDisplay = '';
-        if (config.activeLiveInput && config.activeLiveInput.archerIndex === pIdx) {
-          const currentInputArr = config.activeLiveInput.arrows;
-          if (currentInputArr && currentInputArr.length > 0) {
-            let activeSum = 0;
-            currentInputArr.forEach(code => {
-              activeSum += getScoreNumericValue(code);
-              if (code === 'X' || code === 'X_WBN') totalX += 1;
-            });
-            totalScore += activeSum;
+        const draftObj = getDraftForArcher(config, pIdx);
+        if (draftObj && Array.isArray(draftObj.arrows) && draftObj.arrows.length > 0) {
+          let activeSum = 0;
+          draftObj.arrows.forEach(code => {
+            activeSum += getScoreNumericValue(code);
+            if (code === 'X' || code === 'X_WBN') totalX += 1;
+          });
+          totalScore += activeSum;
 
-            const formattedActive = currentInputArr.map(c => c === 'X_WBN' ? 'X(WBN)' : (c === 'X' ? 'X(10)' : c)).join(' • ');
+          const formattedActive = draftObj.arrows.map(c => formatArrowCode(c)).join(' • ');
+          const draftEndNum = draftObj.endNumber || ((p.scores ? p.scores.length : 0) + 1);
 
-            activeInputDisplay = `
-              <div style="font-size:0.8rem; color:#ea580c; font-weight:800; margin-top:6px; background:#fff7ed; padding:4px 8px; border-radius:6px; border:1px solid #fdba74; display:inline-block;">
-                ✒️ Sedang Diinput: ${formattedActive} (${activeSum} Poin)
-              </div>
-            `;
-          }
+          activeInputDisplay = `
+            <div style="font-size:0.8rem; color:#ea580c; font-weight:800; margin-top:6px; background:#fff7ed; padding:4px 8px; border-radius:6px; border:1px solid #fdba74; display:inline-block;">
+              ✒️ End ${draftEndNum} (Draft): ${formattedActive} (${activeSum} Poin)
+            </div>
+          `;
         }
 
         return { ...p, totalScore, totalX, endDetailsHTML, activeInputDisplay };
