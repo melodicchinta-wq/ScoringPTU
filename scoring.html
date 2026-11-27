@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 
@@ -202,7 +203,7 @@
       </nav>
     </div>
     <div class="mobile-footer-text" style="font-size: 0.75rem; color: #94a3b8; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px;">
-      <p>Copyright &copy; 2026 &bull; </p>
+      <p>Copyright &copy; 2026 &bull; Mela Aulia Syarifah </p>
     </div>
   </aside>
 
@@ -227,7 +228,7 @@
       </div>
 
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <p style="font-size:0.75rem; color:#64748b; font-weight:700; text-transform: uppercase;" id="sc-giliran-label">Giliran Pemanah:</p>
+        <p style="font-size:0.75rem; color:#64748b; font-weight:700; text-transform: uppercase;" id="sc-giliran-label">Pilih Pemanah:</p>
         <span id="sc-arrow-info" style="font-size: 0.8rem; font-weight: 700; color: #4f46e5;">3 Arrow</span>
       </div>
       <div class="archer-selector" id="sc-archer-tabs"></div>
@@ -344,7 +345,7 @@
   </div>
 
   <footer class="desktop-footer" style="background: #222; color: white; text-align: center; padding: 20px; margin-top: 50px;">
-    <p>Copyright &copy; 2026 &bull; </p>
+    <p>Copyright &copy; 2026 &bull; Mela Aulia Syarifah</p>
   </footer>
 
 <script type="module">
@@ -401,6 +402,11 @@
     const activeUser = getActiveUser();
     const cleanEmail = String(activeUser.email || 'guest@archery.com').trim().toLowerCase();
     return cleanEmail.replace(/[^a-z0-9]/gi, '_');
+  }
+
+  function getArcherActiveEnd(p) {
+    const completedEnds = Array.isArray(p?.scores) ? p.scores.length : 0;
+    return Math.min(completedEnds + 1, Number(appConfig?.totalEnd) || 1);
   }
 
   function getDraftKey(archerIdx = activeArcherIndex, endNum = currentEnd) {
@@ -689,12 +695,8 @@
     if (activeSessionIndex >= uniqueSessions.length) activeSessionIndex = 0;
     const currentSessionName = uniqueSessions[activeSessionIndex] || 'Sesi 1';
 
-    document.getElementById('sc-info').innerText = `${appConfig.busur} • ${appConfig.jarak}`;
-    document.getElementById('sc-rambahan-title').innerText = `${currentSessionName} • Rambahan ${currentEnd} dari ${appConfig.totalEnd}`;
-    document.getElementById('sc-arrow-info').innerText = `${appConfig.arrowCount} Arrow`;
-
     const currentSessionParticipants = appConfig.participants.filter(p => (p.sesi || 'Sesi 1') === currentSessionName);
-    document.getElementById('sc-giliran-label').innerText = `Giliran Pemanah (${currentSessionName}):`;
+    document.getElementById('sc-giliran-label').innerText = `Pilih Pemanah (${currentSessionName}):`;
 
     const activeP = appConfig.participants[activeArcherIndex];
     if (!activeP || (activeP.sesi || 'Sesi 1') !== currentSessionName) {
@@ -702,21 +704,41 @@
       if (firstInSession !== -1) activeArcherIndex = firstInSession;
     }
 
-    currentArrowsInput = [...getArcherDraftArrows(activeArcherIndex, currentEnd)];
+    const currentActiveP = appConfig.participants[activeArcherIndex];
+    const archerEnd = getArcherActiveEnd(currentActiveP);
+    currentEnd = archerEnd;
+
+    document.getElementById('sc-info').innerText = `${appConfig.busur} • ${appConfig.jarak}`;
+    document.getElementById('sc-rambahan-title').innerText = `${currentSessionName} • Rambahan ${archerEnd} dari ${appConfig.totalEnd}`;
+    document.getElementById('sc-arrow-info').innerText = `${appConfig.arrowCount} Arrow`;
+
+    currentArrowsInput = [...getArcherDraftArrows(activeArcherIndex, archerEnd)];
 
     const tabsContainer = document.getElementById('sc-archer-tabs');
     tabsContainer.innerHTML = '';
 
+    const totalEndsAllowed = Number(appConfig.totalEnd) || 1;
+
     currentSessionParticipants.forEach((p) => {
       const globalIdx = appConfig.participants.indexOf(p);
+      const pEndsDone = Array.isArray(p.scores) ? p.scores.length : 0;
+      const pNextEnd = Math.min(pEndsDone + 1, totalEndsAllowed);
+      const isDoneAll = pEndsDone >= totalEndsAllowed;
+
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = `btn-archer-tab ${globalIdx === activeArcherIndex ? 'active' : ''}`;
-      btn.innerText = `${p.name} [${p.bantalan || 'Bantalan 1'}]`;
+      btn.innerText = isDoneAll
+        ? `${p.name} [${p.bantalan || 'Bantalan 1'}] ✓`
+        : `${p.name} [${p.bantalan || 'Bantalan 1'}] (End ${pNextEnd})`;
+
       btn.onclick = () => {
         clearTimeout(liveSyncTimer);
         activeArcherIndex = globalIdx;
-        currentArrowsInput = [...getArcherDraftArrows(globalIdx, currentEnd)];
+        const targetP = appConfig.participants[globalIdx];
+        const targetEnd = getArcherActiveEnd(targetP);
+        currentEnd = targetEnd;
+        currentArrowsInput = [...getArcherDraftArrows(globalIdx, targetEnd)];
         initScoring();
         if (currentArrowsInput.length > 0) {
           syncLiveDraftToFirebase(false);
@@ -725,9 +747,13 @@
       tabsContainer.appendChild(btn);
     });
 
-    const currentActiveP = appConfig.participants[activeArcherIndex];
     if (currentActiveP) {
-      document.getElementById('sc-current-archer-label').innerText = `Poin Arrow ${currentActiveP.name} (${currentActiveP.bantalan || 'Bantalan 1'}) (Rambahan ${currentEnd}):`;
+      const pEndsDone = Array.isArray(currentActiveP.scores) ? currentActiveP.scores.length : 0;
+      if (pEndsDone >= totalEndsAllowed) {
+        document.getElementById('sc-current-archer-label').innerText = `${currentActiveP.name} (${currentActiveP.bantalan || 'Bantalan 1'}) sudah menyelesaikan seluruh ${totalEndsAllowed} rambahan.`;
+      } else {
+        document.getElementById('sc-current-archer-label').innerText = `Poin Arrow ${currentActiveP.name} (${currentActiveP.bantalan || 'Bantalan 1'}) (Rambahan ${archerEnd}):`;
+      }
     }
 
     renderArrowBoxes();
@@ -752,6 +778,14 @@
 
   function inputScore(val) {
     if (!appConfig) return;
+    const activeP = appConfig.participants[activeArcherIndex];
+    const totalEndsAllowed = Number(appConfig.totalEnd) || 1;
+    const pEndsDone = Array.isArray(activeP?.scores) ? activeP.scores.length : 0;
+    if (pEndsDone >= totalEndsAllowed) {
+      alert(`${activeP.name} sudah menyelesaikan seluruh ${totalEndsAllowed} rambahan.`);
+      return;
+    }
+
     if (currentArrowsInput.length < appConfig.arrowCount) {
       const nextArrows = [...currentArrowsInput, { val: val, x: null, y: null }];
       setArcherDraftArrows(nextArrows, activeArcherIndex, currentEnd);
@@ -784,6 +818,7 @@
     gridContainer.innerHTML = '';
 
     const liveDrafts = appConfig.liveDrafts || {};
+    const totalEndsAllowed = Number(appConfig.totalEnd) || 1;
 
     appConfig.participants.forEach((p, pIdx) => {
       let totalPoin = 0;
@@ -813,13 +848,17 @@
         `;
       });
 
-      const localDraftForThisArcher = getArcherDraftArrows(pIdx, currentEnd);
+      const pEndsDone = Array.isArray(p.scores) ? p.scores.length : 0;
+      const pTargetEnd = getArcherActiveEnd(p);
+      const localDraftForThisArcher = getArcherDraftArrows(pIdx, pTargetEnd);
       const remoteDraftObj = liveDrafts[String(pIdx)] || null;
-      const isThisTabTypingThisArcher = (pIdx === activeArcherIndex && localDraftForThisArcher.length > 0);
+
+      const isThisTabTypingThisArcher = (pIdx === activeArcherIndex && localDraftForThisArcher.length > 0 && pEndsDone < totalEndsAllowed);
       const hasRemoteDraft = (
         !isThisTabTypingThisArcher &&
+        pEndsDone < totalEndsAllowed &&
         remoteDraftObj &&
-        Number(remoteDraftObj.endNumber || currentEnd) === Number(currentEnd) &&
+        Number(remoteDraftObj.endNumber || pTargetEnd) === Number(pTargetEnd) &&
         Array.isArray(remoteDraftObj.arrows) &&
         remoteDraftObj.arrows.length > 0
       );
@@ -841,7 +880,7 @@
 
         endRowsHTML += `
           <div class="end-row draft-row">
-            <div class="end-label">✒️ End ${p.scores.length + 1}</div>
+            <div class="end-label">✒️ End ${pTargetEnd}</div>
             <div class="end-dots">✒️ ${formattedActive}</div>
             <span class="end-total">${activeSum} Poin</span>
           </div>
@@ -853,8 +892,8 @@
       card.innerHTML = `
         <div class="p-card-header">
           <div>
-            <div class="p-card-name">${p.name} ${pIdx === activeArcherIndex ? '🎯 (Aktif)' : ''}</div>
-            <div class="p-card-club">${p.club || 'Independen'} • <span style="color:#4f46e5; font-weight:700;">${p.bantalan || 'Bantalan 1'}</span> (${p.sesi || 'Sesi 1'})</div>
+            <div class="p-card-name">${p.name} ${pIdx === activeArcherIndex ? '🎯 (Dipilih)' : ''}</div>
+            <div class="p-card-club">${p.club || 'Independen'} • <span style="color:#4f46e5; font-weight:700;">${p.bantalan || 'Bantalan 1'}</span> (${p.sesi || 'Sesi 1'}) • ${pEndsDone}/${totalEndsAllowed} End</div>
           </div>
           <div style="display:flex; align-items:center; gap:6px;">
             <span style="background:#fef3c7; color:#b45309; padding:6px 10px; border-radius:10px; font-weight:800; font-size:0.8rem;">${totalXCount}X</span>
@@ -940,7 +979,7 @@
         updatedAt: serverTimestamp()
       });
       closeEditEndModal();
-      renderAllParticipantsSummary();
+      initScoring();
     } catch (error) {
       appConfig.participants[pIdx].scores = backupScores;
       alert("Gagal menyimpan perubahan ke server: " + error.message);
@@ -965,12 +1004,11 @@
         participants: firebaseParticipants,
         updatedAt: serverTimestamp()
       });
-      if (pIdx === activeArcherIndex && currentEnd > 1) {
-        currentEnd = p.scores.length + 1;
-        initScoring();
-      } else {
-        renderAllParticipantsSummary();
+      if (pIdx === activeArcherIndex) {
+        currentEnd = getArcherActiveEnd(p);
+        currentArrowsInput = [...getArcherDraftArrows(pIdx, currentEnd)];
       }
+      initScoring();
     } catch (error) {
       p.scores = backupScores;
       alert("Gagal menghapus rambahan dari server: " + error.message);
@@ -986,6 +1024,21 @@
 
   async function nextTurnOrRambahan() {
     if (!appConfig) return;
+
+    const savedArcherIdx = activeArcherIndex;
+    const savedArcher = appConfig.participants[savedArcherIdx];
+    if (!savedArcher) return;
+
+    const totalEndsAllowed = Number(appConfig.totalEnd) || 1;
+    if (!Array.isArray(savedArcher.scores)) {
+      savedArcher.scores = [];
+    }
+
+    if (savedArcher.scores.length >= totalEndsAllowed) {
+      alert(`${savedArcher.name} sudah menyelesaikan seluruh ${totalEndsAllowed} rambahan di sesi ini.`);
+      return;
+    }
+
     if (currentArrowsInput.length < appConfig.arrowCount) {
       alert(`Harap isi lengkap ${appConfig.arrowCount} arrow terlebih dahulu!`);
       return;
@@ -993,24 +1046,16 @@
 
     clearTimeout(liveSyncTimer);
 
-    const savedArcherIdx = activeArcherIndex;
+    const targetEnd = savedArcher.scores.length + 1;
     const archerKey = String(savedArcherIdx);
     const plainValues = currentArrowsInput.map(i => (typeof i === 'object' ? i.val : i));
 
-    setArcherDraftArrows([], savedArcherIdx, currentEnd);
+    setArcherDraftArrows([], savedArcherIdx, targetEnd);
     if (appConfig.liveDrafts) {
       delete appConfig.liveDrafts[archerKey];
     }
 
-    if (!Array.isArray(appConfig.participants[savedArcherIdx].scores)) {
-      appConfig.participants[savedArcherIdx].scores = [];
-    }
-
-    while (appConfig.participants[savedArcherIdx].scores.length < currentEnd - 1) {
-      appConfig.participants[savedArcherIdx].scores.push([]);
-    }
-    appConfig.participants[savedArcherIdx].scores[currentEnd - 1] = plainValues;
-
+    savedArcher.scores.push(plainValues);
     const firebaseParticipants = convertScoresToFirebase(appConfig.participants);
 
     try {
@@ -1023,41 +1068,27 @@
       });
     } catch (error) {
       alert("Gagal menyimpan ke server: " + error.message);
-      appConfig.participants[savedArcherIdx].scores.pop();
+      savedArcher.scores.pop();
       return;
     }
 
     const uniqueSessions = getUniqueSessions();
-    const currentSessionName = uniqueSessions[activeSessionIndex];
+    const currentSessionName = uniqueSessions[activeSessionIndex] || 'Sesi 1';
     const currentSessionParticipants = appConfig.participants.filter(p => (p.sesi || 'Sesi 1') === currentSessionName);
 
-    let nextArcherIdx = -1;
+    const allParticipantsFinishedSession = currentSessionParticipants.every(
+      p => Array.isArray(p.scores) && p.scores.length >= totalEndsAllowed
+    );
 
-    for (let i = 0; i < currentSessionParticipants.length; i++) {
-      const p = currentSessionParticipants[i];
-      const globalIdx = appConfig.participants.indexOf(p);
-
-      if (!p.scores || p.scores.length < currentEnd || p.scores[currentEnd - 1] === undefined || p.scores[currentEnd - 1].length === 0) {
-        if (globalIdx !== savedArcherIdx) {
-          nextArcherIdx = globalIdx;
-          break;
-        }
-      }
+    if (allParticipantsFinishedSession) {
+      showSessionLeaderboard(currentSessionName);
+      return;
     }
 
-    if (nextArcherIdx === -1) {
-      if (currentEnd < appConfig.totalEnd) {
-        currentEnd++;
-        const firstInSession = appConfig.participants.indexOf(currentSessionParticipants[0]);
-        activeArcherIndex = firstInSession;
-        initScoring();
-      } else {
-        showSessionLeaderboard(currentSessionName);
-      }
-    } else {
-      activeArcherIndex = nextArcherIdx;
-      initScoring();
-    }
+    activeArcherIndex = savedArcherIdx;
+    currentEnd = getArcherActiveEnd(savedArcher);
+    currentArrowsInput = [...getArcherDraftArrows(savedArcherIdx, currentEnd)];
+    initScoring();
   }
 
   function showSessionLeaderboard(sessionName) {
