@@ -349,7 +349,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getFirestore, doc, onSnapshot, updateDoc, serverTimestamp, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  import { getFirestore, doc, onSnapshot, updateDoc, serverTimestamp, collection, addDoc, deleteField } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBO7QmIO80laPQUqKj80C-QZ74ZHPK6WJA",
@@ -380,6 +380,7 @@
   let activeSessionIndex = 0;
   let activeArcherIndex = 0;
   let currentArrowsInput = [];
+  let draftsByArcher = {};
   let liveSyncTimer = null;
   let unsubscribeSnapshot = null;
   let editingTarget = { pIdx: null, eIdx: null };
@@ -400,6 +401,27 @@
     const activeUser = getActiveUser();
     const cleanEmail = String(activeUser.email || 'guest@archery.com').trim().toLowerCase();
     return cleanEmail.replace(/[^a-z0-9]/gi, '_');
+  }
+
+  function getDraftKey(archerIdx = activeArcherIndex, endNum = currentEnd) {
+    return `${endNum}_${archerIdx}`;
+  }
+
+  function getArcherDraftArrows(archerIdx = activeArcherIndex, endNum = currentEnd) {
+    const key = getDraftKey(archerIdx, endNum);
+    return Array.isArray(draftsByArcher[key]) ? draftsByArcher[key] : [];
+  }
+
+  function setArcherDraftArrows(arrowsArr, archerIdx = activeArcherIndex, endNum = currentEnd) {
+    const key = getDraftKey(archerIdx, endNum);
+    if (!arrowsArr || arrowsArr.length === 0) {
+      delete draftsByArcher[key];
+    } else {
+      draftsByArcher[key] = [...arrowsArr];
+    }
+    if (archerIdx === activeArcherIndex && endNum === currentEnd) {
+      currentArrowsInput = draftsByArcher[key] ? [...draftsByArcher[key]] : [];
+    }
   }
 
   function syncAdminNavAccess() {
@@ -479,6 +501,7 @@
 
       const rawData = docSnap.data();
       rawData.participants = convertScoresFromFirebase(rawData.participants);
+      rawData.liveDrafts = rawData.liveDrafts || {};
       appConfig = rawData;
 
       initScoring();
@@ -500,18 +523,29 @@
 
   function syncLiveDraftToFirebase(forceNull = false) {
     if (!activeSessionDocId || !appConfig) return;
-    const payload = forceNull ? null : {
-      clientId: clientDraftId,
-      archerIndex: activeArcherIndex,
-      endNumber: currentEnd,
-      arrows: currentArrowsInput.map(i => (typeof i === 'object' ? i.val : i)),
-      sum: currentArrowsInput.reduce((acc, item) => acc + getScoreNumericValue(typeof item === 'object' ? item.val : item), 0)
-    };
 
-    appConfig.activeLiveInput = payload;
+    const archerKey = String(activeArcherIndex);
+    const currentDrafts = { ...(appConfig.liveDrafts || {}) };
+    const shouldClear = forceNull || currentArrowsInput.length === 0;
+
+    if (shouldClear) {
+      delete currentDrafts[archerKey];
+    } else {
+      currentDrafts[archerKey] = {
+        clientId: clientDraftId,
+        archerIndex: activeArcherIndex,
+        endNumber: currentEnd,
+        arrows: currentArrowsInput.map(i => (typeof i === 'object' ? i.val : i)),
+        sum: currentArrowsInput.reduce((acc, item) => acc + getScoreNumericValue(typeof item === 'object' ? item.val : item), 0),
+        updatedAt: Date.now()
+      };
+    }
+
+    appConfig.liveDrafts = currentDrafts;
+
     const docRef = doc(db, "sessions", activeSessionDocId);
     updateDoc(docRef, {
-      activeLiveInput: payload,
+      [`liveDrafts.${archerKey}`]: shouldClear ? deleteField() : currentDrafts[archerKey],
       updatedAt: serverTimestamp()
     }).catch(err => console.warn("Gagal sync draft:", err.message));
   }
@@ -582,7 +616,8 @@
     const pixel = ctx.getImageData(clickX, clickY, 1, 1).data;
     const scoreVal = calculateWaletScore(pixel[0], pixel[1], pixel[2], clickX, clickY);
 
-    currentArrowsInput.push({ val: scoreVal, x: clickX, y: clickY });
+    const nextArrows = [...currentArrowsInput, { val: scoreVal, x: clickX, y: clickY }];
+    setArcherDraftArrows(nextArrows, activeArcherIndex, currentEnd);
     drawTargetCanvas();
     renderArrowBoxes();
     renderAllParticipantsSummary();
@@ -661,6 +696,14 @@
     const currentSessionParticipants = appConfig.participants.filter(p => (p.sesi || 'Sesi 1') === currentSessionName);
     document.getElementById('sc-giliran-label').innerText = `Giliran Pemanah (${currentSessionName}):`;
 
+    const activeP = appConfig.participants[activeArcherIndex];
+    if (!activeP || (activeP.sesi || 'Sesi 1') !== currentSessionName) {
+      const firstInSession = appConfig.participants.findIndex(p => (p.sesi || 'Sesi 1') === currentSessionName);
+      if (firstInSession !== -1) activeArcherIndex = firstInSession;
+    }
+
+    currentArrowsInput = [...getArcherDraftArrows(activeArcherIndex, currentEnd)];
+
     const tabsContainer = document.getElementById('sc-archer-tabs');
     tabsContainer.innerHTML = '';
 
@@ -673,18 +716,14 @@
       btn.onclick = () => {
         clearTimeout(liveSyncTimer);
         activeArcherIndex = globalIdx;
-        currentArrowsInput = [];
+        currentArrowsInput = [...getArcherDraftArrows(globalIdx, currentEnd)];
         initScoring();
-        syncLiveDraftToFirebase(true);
+        if (currentArrowsInput.length > 0) {
+          syncLiveDraftToFirebase(false);
+        }
       };
       tabsContainer.appendChild(btn);
     });
-
-    const activeP = appConfig.participants[activeArcherIndex];
-    if (!activeP || (activeP.sesi || 'Sesi 1') !== currentSessionName) {
-      const firstInSession = appConfig.participants.findIndex(p => (p.sesi || 'Sesi 1') === currentSessionName);
-      if (firstInSession !== -1) activeArcherIndex = firstInSession;
-    }
 
     const currentActiveP = appConfig.participants[activeArcherIndex];
     if (currentActiveP) {
@@ -714,7 +753,8 @@
   function inputScore(val) {
     if (!appConfig) return;
     if (currentArrowsInput.length < appConfig.arrowCount) {
-      currentArrowsInput.push({ val: val, x: null, y: null });
+      const nextArrows = [...currentArrowsInput, { val: val, x: null, y: null }];
+      setArcherDraftArrows(nextArrows, activeArcherIndex, currentEnd);
       renderArrowBoxes();
       drawTargetCanvas();
       renderAllParticipantsSummary();
@@ -725,7 +765,8 @@
   }
 
   function undoScore() {
-    currentArrowsInput.pop();
+    const nextArrows = currentArrowsInput.slice(0, -1);
+    setArcherDraftArrows(nextArrows, activeArcherIndex, currentEnd);
     renderArrowBoxes();
     drawTargetCanvas();
     renderAllParticipantsSummary();
@@ -742,7 +783,7 @@
     if (!gridContainer || !appConfig || !Array.isArray(appConfig.participants)) return;
     gridContainer.innerHTML = '';
 
-    const liveInput = appConfig.activeLiveInput;
+    const liveDrafts = appConfig.liveDrafts || {};
 
     appConfig.participants.forEach((p, pIdx) => {
       let totalPoin = 0;
@@ -772,20 +813,21 @@
         `;
       });
 
-      const isMyLocalActiveDraft = (pIdx === activeArcherIndex && currentArrowsInput.length > 0);
-      const isRemoteActiveDraft = (
-        liveInput &&
-        liveInput.clientId !== clientDraftId &&
-        Number(liveInput.archerIndex) === pIdx &&
-        Number(liveInput.endNumber || currentEnd) === Number(currentEnd) &&
-        Array.isArray(liveInput.arrows) &&
-        liveInput.arrows.length > 0
+      const localDraftForThisArcher = getArcherDraftArrows(pIdx, currentEnd);
+      const remoteDraftObj = liveDrafts[String(pIdx)] || null;
+      const isThisTabTypingThisArcher = (pIdx === activeArcherIndex && localDraftForThisArcher.length > 0);
+      const hasRemoteDraft = (
+        !isThisTabTypingThisArcher &&
+        remoteDraftObj &&
+        Number(remoteDraftObj.endNumber || currentEnd) === Number(currentEnd) &&
+        Array.isArray(remoteDraftObj.arrows) &&
+        remoteDraftObj.arrows.length > 0
       );
 
-      if (isMyLocalActiveDraft || isRemoteActiveDraft) {
-        const activeVals = isMyLocalActiveDraft
-          ? currentArrowsInput.map(item => (typeof item === 'object' ? item.val : item))
-          : liveInput.arrows;
+      if (isThisTabTypingThisArcher || hasRemoteDraft) {
+        const activeVals = isThisTabTypingThisArcher
+          ? localDraftForThisArcher.map(item => (typeof item === 'object' ? item.val : item))
+          : remoteDraftObj.arrows;
 
         let activeSum = 0;
         activeVals.forEach(code => {
@@ -951,18 +993,23 @@
 
     clearTimeout(liveSyncTimer);
 
+    const savedArcherIdx = activeArcherIndex;
+    const archerKey = String(savedArcherIdx);
     const plainValues = currentArrowsInput.map(i => (typeof i === 'object' ? i.val : i));
-    currentArrowsInput = [];
-    appConfig.activeLiveInput = null;
 
-    if (!Array.isArray(appConfig.participants[activeArcherIndex].scores)) {
-      appConfig.participants[activeArcherIndex].scores = [];
+    setArcherDraftArrows([], savedArcherIdx, currentEnd);
+    if (appConfig.liveDrafts) {
+      delete appConfig.liveDrafts[archerKey];
     }
 
-    while (appConfig.participants[activeArcherIndex].scores.length < currentEnd - 1) {
-      appConfig.participants[activeArcherIndex].scores.push([]);
+    if (!Array.isArray(appConfig.participants[savedArcherIdx].scores)) {
+      appConfig.participants[savedArcherIdx].scores = [];
     }
-    appConfig.participants[activeArcherIndex].scores[currentEnd - 1] = plainValues;
+
+    while (appConfig.participants[savedArcherIdx].scores.length < currentEnd - 1) {
+      appConfig.participants[savedArcherIdx].scores.push([]);
+    }
+    appConfig.participants[savedArcherIdx].scores[currentEnd - 1] = plainValues;
 
     const firebaseParticipants = convertScoresToFirebase(appConfig.participants);
 
@@ -970,12 +1017,13 @@
       const docRef = doc(db, "sessions", activeSessionDocId);
       await updateDoc(docRef, {
         participants: firebaseParticipants,
+        [`liveDrafts.${archerKey}`]: deleteField(),
         activeLiveInput: null,
         updatedAt: serverTimestamp()
       });
     } catch (error) {
       alert("Gagal menyimpan ke server: " + error.message);
-      appConfig.participants[activeArcherIndex].scores.pop();
+      appConfig.participants[savedArcherIdx].scores.pop();
       return;
     }
 
@@ -990,7 +1038,7 @@
       const globalIdx = appConfig.participants.indexOf(p);
 
       if (!p.scores || p.scores.length < currentEnd || p.scores[currentEnd - 1] === undefined || p.scores[currentEnd - 1].length === 0) {
-        if (globalIdx !== activeArcherIndex) {
+        if (globalIdx !== savedArcherIdx) {
           nextArcherIdx = globalIdx;
           break;
         }
@@ -1231,7 +1279,7 @@
   function restartToSetup() {
     const accountKey = getAccountKey();
     const docRef = doc(db, "sessions", activeSessionDocId);
-    updateDoc(docRef, { status: "completed", activeLiveInput: null }).then(() => {
+    updateDoc(docRef, { status: "completed", activeLiveInput: null, liveDrafts: {} }).then(() => {
       sessionStorage.removeItem(`archeryConfig_${accountKey}`);
       localStorage.removeItem(`archeryConfig_${accountKey}`);
       localStorage.removeItem('archeryConfig');
@@ -1274,4 +1322,3 @@
 </body>
 
 </html>
-
